@@ -1,0 +1,214 @@
+<mujoco model="hexapod">
+  <default>
+    <default class="robot">
+      <default class="visual">
+        <geom contype="0" conaffinity="0" group="2" />
+      </default>
+      <default class="collision">
+        <geom contype="0" conaffinity="1" group="3" />
+      </default>
+    </default>
+    <default class="floor">
+      <geom type="plane" size="0 0 0.05" material="groundplane" />
+    </default>
+  </default>
+
+  <compiler angle="radian" meshdir="." balanceinertia="true" />
+
+  <visual>
+    <global offwidth="3840" offheight="2160" />
+  </visual>
+
+  <worldbody>
+    <body name="base_footprint" childclass="robot" pos="0 0 0.1349">
+      <body name="base_link">
+        <body name="Base">
+          <inertial pos="3.17137522879131E-06 -3.31180346009379E-06 0.0185997063575468" mass="0.516033712055295" diaginertia="0.00150227819625822 0.000814451751266275 0.00226054167247862" />
+          <geom name="Base_collision" type="mesh" mesh="Base_collision_Base" class="collision" />
+          <geom name="Base_visual" type="mesh" mesh="Base_Base" material="default_material" class="visual" />
+          <body name="Coxa_1" pos="0.067149 0.11215 0.05285" quat="0.2701 0.2701 0.6535 0.6535">
+            <inertial pos="0.000577862012579221 -0.0317727763355633 0.0354243258351977" mass="0.058206986384816" diaginertia="2.09518881532946e-05 1.97804446474374e-05 2.06393092896648e-05" />
+            <joint name="Joint1_1" type="hinge" range="-1.5708 1.5708" axis="0 -1 0" />
+            <geom name="Coxa_1_collision" type="mesh" mesh="Coxa_1_collision_Coxa_1" class="collision" />
+            <geom name="Coxa_1_visual" type="mesh" mesh="Coxa_1_Coxa_1" material="default_material" class="visual" />
+            <body name="Femur_1" pos="-0.03075 -0.03075 0.07" quat="0.7071 0 0 0.7071">
+              <inertial pos="0.00548415363509747 -0.0355181600169509 0.0386098257844835" mass="0.10712888900759" diaginertia="5.18535588310174e-05 4.90722656444643e-05 1.67583851946084e-05" />
+              <joint name="Joint1_2" type="hinge" range="-1.5708 1.5708" axis="0 -1 0" />
+              <geom name="Femur_1_collision" type="mesh" mesh="Femur_1_collision_Femur_1" class="collision" />
+              <geom name="Femur_1_visual" type="mesh" mesh="Femur_1_Femur_1" material="default_material" class="visual" />
+              <body name="Tibia_1" pos="0.011069 -0.00075 0.077211" quat="0.888 0 -0.4599 0">
+                <inertial pos="-0.0138680196135901 -0.0324549603873032 0.0624085311603042" mass="0.0754192114511324" diaginertia="8.21130142628132e-05 0.000101713737698438 4.78951327218008e-05" />
+                <joint name="Joint1_3" type="hinge" range="-2.0 0.5" axis="0 -1 0" />
+                <geom name="Tibia_1_collision" type="mesh" mesh="Tibia_1_collision_Tibia_1" class="collision" />
+                <geom name="Tibia_1_visual" type="mesh" mesh="Tibia_1_Tibia_1" material="default_material" class="visual" />
+              </body>
+            </body>
+          </body>
+          <body name="Coxa_2" pos="0.08925 0 0.05285" quat="0.4924 0.4924 0.5075 0.5075">
+            <inertial pos="0.000577862012579344 -0.0317727763355634 0.0354243258351973" mass="0.058206986384815" diaginertia="2.09518881532943e-05 1.97804446474369e-05 2.06393092896644e-05" />
+            <joint name="Joint2_1" type="hinge" range="-1.5708 1.5708" axis="0 -1 0" />
+            <geom name="Coxa_2_collision" type="mesh" mesh="Coxa_2_collision_Coxa_2" class="collision" />
+            <geom name="Coxa_2_visual" type="mesh" mesh="Coxa_2_Coxa_2" material="default_material" class="visual" />
+            <body name="Femur_2" pos="-0.03075 -0.03075 0.07" quat="0.7071 0 0 0.7071">
+              <inertial pos="0.0142167130076838 -0.0347681597363993 0.0363193553535422" mass="0.107128867042949" diaginertia="4.77633033042784e-05 4.90722655777639e-05 2.08486251280525e-05" />
+              <joint name="Joint2_2" type="hinge" range="-1.5708 1.5708" axis="0 -1 0" />
+              <geom name="Femur_2_collision" type="mesh" mesh="Femur_2_collision_Femur_2" class="collision" />
+              <geom name="Femur_2_visual" type="mesh" mesh="Femur_2_Femur_2" material="default_material" class="visual" />
+              <body name="Tibia_2" pos="0.028338 0.00075 0.07267" quat="0.9218 0 -0.3876 0">
+                <inertial pos="-0.0138677597249909 -0.0324550056850968 0.0624082245511181" mass="0.075419455199217" diaginertia="8.21142033520056e-05 0.000101716150136195 4.78961698795125e-05" />
+                <joint name="Joint2_3" type="hinge" range="-2.0 0.5" axis="0 -1 0" />
+                <geom name="Tibia_2_collision" type="mesh" mesh="Tibia_2_collision_Tibia_2" class="collision" />
+                <geom name="Tibia_2_visual" type="mesh" mesh="Tibia_2_Tibia_2" material="default_material" class="visual" />
+              </body>
+            </body>
+          </body>
+          <body name="Coxa_3" pos="0.067149 -0.11215 0.05585" quat="0.6513 0.6513 0.2754 0.2754">
+            <inertial pos="0.000577862012579193 -0.0317727763355633 0.0354243258351977" mass="0.058206986384816" diaginertia="2.09518881532946e-05 1.97804446474374e-05 2.06393092896648e-05" />
+            <joint name="Joint3_1" type="hinge" range="-1.5708 1.5708" axis="0 -1 0" />
+            <geom name="Coxa_3_collision" type="mesh" mesh="Coxa_3_collision_Coxa_3" class="collision" />
+            <geom name="Coxa_3_visual" type="mesh" mesh="Coxa_3_Coxa_3" material="default_material" class="visual" />
+            <body name="Femur_3" pos="-0.03075 -0.03075 0.07" quat="0.7071 0 0 0.7071">
+              <inertial pos="0.0124923057730173 -0.0347681599456048 0.0369479735594456" mass="0.1071288893298" diaginertia="4.88670640388268e-05 4.90722656252189e-05 1.97448801612347e-05" />
+              <joint name="Joint3_2" type="hinge" range="-1.5708 1.5708" axis="0 -1 0" />
+              <geom name="Femur_3_collision" type="mesh" mesh="Femur_3_collision_Femur_3" class="collision" />
+              <geom name="Femur_3_visual" type="mesh" mesh="Femur_3_Femur_3" material="default_material" class="visual" />
+              <body name="Tibia_3" pos="0.024888 0.00075 0.073923" quat="0.9218 0 -0.3876 0">
+                <inertial pos="-0.0138680607149134 -0.0324549674801066 0.0624085192294458" mass="0.0754192264755821" diaginertia="8.21130557234919e-05 0.000101713750762835 4.78950705242381e-05" />
+                <joint name="Joint3_3" type="hinge" range="-2.0 0.5" axis="0 -1 0" />
+                <geom name="Tibia_3_collision" type="mesh" mesh="Tibia_3_collision_Tibia_3" class="collision" />
+                <geom name="Tibia_3_visual" type="mesh" mesh="Tibia_3_Tibia_3" material="default_material" class="visual" />
+              </body>
+            </body>
+          </body>
+          <body name="Coxa_4" pos="-0.067149 -0.11215 0.05285" quat="0.6583 0.6583 -0.2581 -0.2581">
+            <inertial pos="0.000577862012579221 -0.0317727763355633 0.0354243258351977" mass="0.0582069863848161" diaginertia="2.09518881532946e-05 1.97804446474374e-05 2.06393092896649e-05" />
+            <joint name="Joint4_1" type="hinge" range="-1.5708 1.5708" axis="0 -1 0" />
+            <geom name="Coxa_4_collision" type="mesh" mesh="Coxa_4_collision_Coxa_4" class="collision" />
+            <geom name="Coxa_4_visual" type="mesh" mesh="Coxa_4_Coxa_4" material="default_material" class="visual" />
+            <body name="Femur_4" pos="-0.03075 -0.03075 0.07" quat="0.7071 0 0 0.7071">
+              <inertial pos="0.0106250052421249 -0.0347681599253407 0.0375275860554965" mass="0.107128889458837" diaginertia="4.99008396656431e-05 4.90722656382846e-05 1.87111046061255e-05" />
+              <joint name="Joint4_2" type="hinge" range="-1.5708 1.5708" axis="0 -1 0" />
+              <geom name="Femur_4_collision" type="mesh" mesh="Femur_4_collision_Femur_4" class="collision" />
+              <geom name="Femur_4_visual" type="mesh" mesh="Femur_4_Femur_4" material="default_material" class="visual" />
+              <body name="Tibia_4" pos="0.021152 0.00075 0.075077" quat="0.8559 0 -0.5171 0">
+                <inertial pos="-0.0138676802679795 -0.0324549919751951 0.0624081139272412" mass="0.0754193444037423" diaginertia="8.21128644307283e-05 0.000101713545020214 4.78950777380955e-05" />
+                <joint name="Joint4_3" type="hinge" range="-2.0 0.5" axis="0 -1 0" />
+                <geom name="Tibia_4_collision" type="mesh" mesh="Tibia_4_collision_Tibia_4" class="collision" />
+                <geom name="Tibia_4_visual" type="mesh" mesh="Tibia_4_Tibia_4" material="default_material" class="visual" />
+              </body>
+            </body>
+          </body>
+          <body name="Coxa_5" pos="-0.08925 0 0.05285" quat="0.4989 0.4989 -0.5011 -0.5011">
+            <inertial pos="0.000577862012579334 -0.0317727763355634 0.0354243258351973" mass="0.0582069863848149" diaginertia="2.09518881532944e-05 1.9780444647437e-05 2.06393092896644e-05" />
+            <joint name="Joint5_1" type="hinge" range="-1.5708 1.5708" axis="0 -1 0" />
+            <geom name="Coxa_5_collision" type="mesh" mesh="Coxa_5_collision_Coxa_5" class="collision" />
+            <geom name="Coxa_5_visual" type="mesh" mesh="Coxa_5_Coxa_5" material="default_material" class="visual" />
+            <body name="Femur_5" pos="-0.03075 -0.03075 0.07" quat="0.7071 0 0 0.7071">
+              <inertial pos="0.00789662242713735 -0.0347681599630932 0.0381895004101029" mass="0.107128865114784" diaginertia="5.10717969304319e-05 4.90722655207553e-05 1.7540130015678e-05" />
+              <joint name="Joint5_2" type="hinge" range="-1.5708 1.5708" axis="0 -1 0" />
+              <geom name="Femur_5_collision" type="mesh" mesh="Femur_5_collision_Femur_5" class="collision" />
+              <geom name="Femur_5_visual" type="mesh" mesh="Femur_5_Femur_5" material="default_material" class="visual" />
+              <body name="Tibia_5" pos="0.015893 0 0.076364" quat="0.9218 0 -0.3876 0">
+                <inertial pos="-0.0138677584148455 -0.0324550061892322 0.0624082248397783" mass="0.0754194500255794" diaginertia="8.21141952956945e-05 0.000101716141896386 4.78961714928674e-05" />
+                <joint name="Joint5_3" type="hinge" range="-2.0 0.5" axis="0 -1 0" />
+                <geom name="Tibia_5_collision" type="mesh" mesh="Tibia_5_collision_Tibia_5" class="collision" />
+                <geom name="Tibia_5_visual" type="mesh" mesh="Tibia_5_Tibia_5" material="default_material" class="visual" />
+              </body>
+            </body>
+          </body>
+          <body name="Coxa_6" pos="-0.067149 0.11215 0.05285" quat="0.2215 0.2215 -0.6715 -0.6715">
+            <inertial pos="0.000577862012579221 -0.0317727763355633 0.0354243258351977" mass="0.0582069863848159" diaginertia="2.09518881532946e-05 1.97804446474373e-05 2.06393092896648e-05" />
+            <joint name="Joint6_1" type="hinge" range="-1.5708 1.5708" axis="0 -1 0" />
+            <geom name="Coxa_6_collision" type="mesh" mesh="Coxa_6_collision_Coxa_6" class="collision" />
+            <geom name="Coxa_6_visual" type="mesh" mesh="Coxa_6_Coxa_6" material="default_material" class="visual" />
+            <body name="Femur_6" pos="-0.03075 -0.03075 0.07" quat="0.7071 0 0 0.7071">
+              <inertial pos="0.00675394593304171 -0.0355181598715529 0.0384080569020034" mass="0.107128889683649" diaginertia="5.14769513685849e-05 4.90722656194813e-05 1.71349930220452e-05" />
+              <joint name="Joint6_2" type="hinge" range="-1.5708 1.5708" axis="0 -1 0" />
+              <geom name="Femur_6_collision" type="mesh" mesh="Femur_6_collision_Femur_6" class="collision" />
+              <geom name="Femur_6_visual" type="mesh" mesh="Femur_6_Femur_6" material="default_material" class="visual" />
+              <body name="Tibia_6" pos="0.013608 -0.00075 0.076804" quat="0.8367 0 -0.5476 0">
+                <inertial pos="-0.0138676550200287 -0.0324549934835745 0.0624080741697963" mass="0.0754192670395059" diaginertia="8.21140496751916e-05 0.000101715600934306 4.78958781380929e-05" />
+                <joint name="Joint6_3" type="hinge" range="-2.0 0.5" axis="0 -1 0" />
+                <geom name="Tibia_6_collision" type="mesh" mesh="Tibia_6_collision_Tibia_6" class="collision" />
+                <geom name="Tibia_6_visual" type="mesh" mesh="Tibia_6_Tibia_6" material="default_material" class="visual" />
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+      <freejoint name="floating_base" />
+    </body>
+    <light pos="0 0 2." dir="0 0 -1" directional="true" />
+    <geom name="floor" class="floor" size="0 0 0.05" />
+  </worldbody>
+
+  <asset>
+    <material name="default_material" rgba="0.7 0.7 0.7 1" />
+    <mesh name="Base_collision_Base" file="meshes/hexa_description/meshes/Base.STL" />
+    <mesh name="Base_Base" file="meshes/hexa_description/meshes/Base.STL" />
+    <mesh name="Coxa_1_collision_Coxa_1" file="meshes/hexa_description/meshes/Coxa_1.STL" />
+    <mesh name="Coxa_1_Coxa_1" file="meshes/hexa_description/meshes/Coxa_1.STL" />
+    <mesh name="Femur_1_collision_Femur_1" file="meshes/hexa_description/meshes/Femur_1.STL" />
+    <mesh name="Femur_1_Femur_1" file="meshes/hexa_description/meshes/Femur_1.STL" />
+    <mesh name="Tibia_1_collision_Tibia_1" file="meshes/hexa_description/meshes/Tibia_1.STL" />
+    <mesh name="Tibia_1_Tibia_1" file="meshes/hexa_description/meshes/Tibia_1.STL" />
+    <mesh name="Coxa_2_collision_Coxa_2" file="meshes/hexa_description/meshes/Coxa_2.STL" />
+    <mesh name="Coxa_2_Coxa_2" file="meshes/hexa_description/meshes/Coxa_2.STL" />
+    <mesh name="Femur_2_collision_Femur_2" file="meshes/hexa_description/meshes/Femur_2.STL" />
+    <mesh name="Femur_2_Femur_2" file="meshes/hexa_description/meshes/Femur_2.STL" />
+    <mesh name="Tibia_2_collision_Tibia_2" file="meshes/hexa_description/meshes/Tibia_2.STL" />
+    <mesh name="Tibia_2_Tibia_2" file="meshes/hexa_description/meshes/Tibia_2.STL" />
+    <mesh name="Coxa_3_collision_Coxa_3" file="meshes/hexa_description/meshes/Coxa_3.STL" />
+    <mesh name="Coxa_3_Coxa_3" file="meshes/hexa_description/meshes/Coxa_3.STL" />
+    <mesh name="Femur_3_collision_Femur_3" file="meshes/hexa_description/meshes/Femur_3.STL" />
+    <mesh name="Femur_3_Femur_3" file="meshes/hexa_description/meshes/Femur_3.STL" />
+    <mesh name="Tibia_3_collision_Tibia_3" file="meshes/hexa_description/meshes/Tibia_3.STL" />
+    <mesh name="Tibia_3_Tibia_3" file="meshes/hexa_description/meshes/Tibia_3.STL" />
+    <mesh name="Coxa_4_collision_Coxa_4" file="meshes/hexa_description/meshes/Coxa_4.STL" />
+    <mesh name="Coxa_4_Coxa_4" file="meshes/hexa_description/meshes/Coxa_4.STL" />
+    <mesh name="Femur_4_collision_Femur_4" file="meshes/hexa_description/meshes/Femur_4.STL" />
+    <mesh name="Femur_4_Femur_4" file="meshes/hexa_description/meshes/Femur_4.STL" />
+    <mesh name="Tibia_4_collision_Tibia_4" file="meshes/hexa_description/meshes/Tibia_4.STL" />
+    <mesh name="Tibia_4_Tibia_4" file="meshes/hexa_description/meshes/Tibia_4.STL" />
+    <mesh name="Coxa_5_collision_Coxa_5" file="meshes/hexa_description/meshes/Coxa_5.STL" />
+    <mesh name="Coxa_5_Coxa_5" file="meshes/hexa_description/meshes/Coxa_5.STL" />
+    <mesh name="Femur_5_collision_Femur_5" file="meshes/hexa_description/meshes/Femur_5.STL" />
+    <mesh name="Femur_5_Femur_5" file="meshes/hexa_description/meshes/Femur_5.STL" />
+    <mesh name="Tibia_5_collision_Tibia_5" file="meshes/hexa_description/meshes/Tibia_5.STL" />
+    <mesh name="Tibia_5_Tibia_5" file="meshes/hexa_description/meshes/Tibia_5.STL" />
+    <mesh name="Coxa_6_collision_Coxa_6" file="meshes/hexa_description/meshes/Coxa_6.STL" />
+    <mesh name="Coxa_6_Coxa_6" file="meshes/hexa_description/meshes/Coxa_6.STL" />
+    <mesh name="Femur_6_collision_Femur_6" file="meshes/hexa_description/meshes/Femur_6.STL" />
+    <mesh name="Femur_6_Femur_6" file="meshes/hexa_description/meshes/Femur_6.STL" />
+    <mesh name="Tibia_6_collision_Tibia_6" file="meshes/hexa_description/meshes/Tibia_6.STL" />
+    <mesh name="Tibia_6_Tibia_6" file="meshes/hexa_description/meshes/Tibia_6.STL" />
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300" />
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2" />
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072" />
+  </asset>
+
+  <actuator>
+    <motor name="Joint1_1" joint="Joint1_1" />
+    <motor name="Joint1_2" joint="Joint1_2" />
+    <motor name="Joint1_3" joint="Joint1_3" />
+    <motor name="Joint2_1" joint="Joint2_1" />
+    <motor name="Joint2_2" joint="Joint2_2" />
+    <motor name="Joint2_3" joint="Joint2_3" />
+    <motor name="Joint3_1" joint="Joint3_1" />
+    <motor name="Joint3_2" joint="Joint3_2" />
+    <motor name="Joint3_3" joint="Joint3_3" />
+    <motor name="Joint4_1" joint="Joint4_1" />
+    <motor name="Joint4_2" joint="Joint4_2" />
+    <motor name="Joint4_3" joint="Joint4_3" />
+    <motor name="Joint5_1" joint="Joint5_1" />
+    <motor name="Joint5_2" joint="Joint5_2" />
+    <motor name="Joint5_3" joint="Joint5_3" />
+    <motor name="Joint6_1" joint="Joint6_1" />
+    <motor name="Joint6_2" joint="Joint6_2" />
+    <motor name="Joint6_3" joint="Joint6_3" />
+  </actuator>
+
+  <visual>
+    <rgba haze="0.15 0.25 0.35 1" />
+  </visual>
+</mujoco>
