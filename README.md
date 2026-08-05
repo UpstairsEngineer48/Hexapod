@@ -10,6 +10,14 @@ hexapod_ws/src/
 
 ## How to Run
 
+**Build the workspace and source it (required after cloning or after any code changes):**
+
+```bash
+cd ~/hexapod_ws
+colcon build
+source install/setup.bash
+```
+
 **Option 1 — Normal launch:**
 
 ```bash
@@ -19,6 +27,7 @@ ros2 launch hexa_simulation simulation.launch.py
 **Option 2 — If you get mesh-loading errors (e.g. `Unable to find file with URI [model://...]`), run these export commands first, then launch:**
 
 ```bash
+source install/setup.bash
 export IGN_GAZEBO_RESOURCE_PATH=$IGN_GAZEBO_RESOURCE_PATH:$(ros2 pkg prefix hexa_description)/share
 export GZ_SIM_RESOURCE_PATH=$IGN_GAZEBO_RESOURCE_PATH
 ros2 launch hexa_simulation simulation.launch.py
