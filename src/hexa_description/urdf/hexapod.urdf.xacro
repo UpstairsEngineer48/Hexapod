@@ -11,6 +11,20 @@
 
     <xacro:include filename="materials.xacro"/>
 
+    <!-- Visual colors, referenced by name in each link's <material> tag -->
+    <material name="base_color">
+        <color rgba="0.15 0.15 0.15 1.0"/>
+    </material>
+    <material name="coxa_color">
+        <color rgba="0.10 0.35 0.75 1.0"/>
+    </material>
+    <material name="femur_color">
+        <color rgba="0.85 0.45 0.05 1.0"/>
+    </material>
+    <material name="tibia_color">
+        <color rgba="0.05 0.05 0.05 1.0"/>
+    </material>
+
     <!-- ========================================== -->
     <!-- TRANSMISSION MACRO FOR HEXAPOD LEGS        -->
     <!-- ========================================== -->
@@ -79,6 +93,7 @@
             <geometry>
                 <mesh filename="package://${package_name}/meshes/Base.STL"/>
             </geometry>
+            <material name="base_color"/>
         </visual>
 
         <collision>
@@ -109,6 +124,7 @@
             <geometry>
                 <mesh filename="package://${package_name}/meshes/Coxa_1.STL"/>
             </geometry>
+            <material name="coxa_color"/>
         </visual>
         <collision>
             <geometry>
@@ -136,6 +152,7 @@
             <geometry>
                 <mesh filename="package://${package_name}/meshes/Femur_1.STL"/>
             </geometry>
+            <material name="femur_color"/>
         </visual>
         <collision>
             <geometry>
@@ -163,6 +180,7 @@
             <geometry>
                 <mesh filename="package://${package_name}/meshes/Tibia_1.STL"/>
             </geometry>
+            <material name="tibia_color"/>
         </visual>
         <collision>
             <geometry>
@@ -191,6 +209,7 @@
             <geometry>
                 <mesh filename="package://${package_name}/meshes/Coxa_2.STL"/>
             </geometry>
+            <material name="coxa_color"/>
         </visual>
         <collision>
             <geometry>
@@ -218,6 +237,7 @@
             <geometry>
                 <mesh filename="package://${package_name}/meshes/Femur_2.STL"/>
             </geometry>
+            <material name="femur_color"/>
         </visual>
         <collision>
             <geometry>
@@ -245,6 +265,7 @@
             <geometry>
                 <mesh filename="package://${package_name}/meshes/Tibia_2.STL"/>
             </geometry>
+            <material name="tibia_color"/>
         </visual>
         <collision>
             <geometry>
@@ -273,6 +294,7 @@
             <geometry>
                 <mesh filename="package://${package_name}/meshes/Coxa_3.STL"/>
             </geometry>
+            <material name="coxa_color"/>
         </visual>
         <collision>
             <geometry>
@@ -300,6 +322,7 @@
             <geometry>
                 <mesh filename="package://${package_name}/meshes/Femur_3.STL"/>
             </geometry>
+            <material name="femur_color"/>
         </visual>
         <collision>
             <geometry>
@@ -327,6 +350,7 @@
             <geometry>
                 <mesh filename="package://${package_name}/meshes/Tibia_3.STL"/>
             </geometry>
+            <material name="tibia_color"/>
         </visual>
         <collision>
             <geometry>
@@ -355,6 +379,7 @@
             <geometry>
                 <mesh filename="package://${package_name}/meshes/Coxa_4.STL"/>
             </geometry>
+            <material name="coxa_color"/>
         </visual>
         <collision>
             <geometry>
@@ -382,6 +407,7 @@
             <geometry>
                 <mesh filename="package://${package_name}/meshes/Femur_4.STL"/>
             </geometry>
+            <material name="femur_color"/>
         </visual>
         <collision>
             <geometry>
@@ -409,6 +435,7 @@
             <geometry>
                 <mesh filename="package://${package_name}/meshes/Tibia_4.STL"/>
             </geometry>
+            <material name="tibia_color"/>
         </visual>
         <collision>
             <geometry>
@@ -437,6 +464,7 @@
             <geometry>
                 <mesh filename="package://${package_name}/meshes/Coxa_5.STL"/>
             </geometry>
+            <material name="coxa_color"/>
         </visual>
         <collision>
             <geometry>
@@ -464,6 +492,7 @@
             <geometry>
                 <mesh filename="package://${package_name}/meshes/Femur_5.STL"/>
             </geometry>
+            <material name="femur_color"/>
         </visual>
         <collision>
             <geometry>
@@ -491,6 +520,7 @@
             <geometry>
                 <mesh filename="package://${package_name}/meshes/Tibia_5.STL"/>
             </geometry>
+            <material name="tibia_color"/>
         </visual>
         <collision>
             <geometry>
@@ -519,6 +549,7 @@
             <geometry>
                 <mesh filename="package://${package_name}/meshes/Coxa_6.STL"/>
             </geometry>
+            <material name="coxa_color"/>
         </visual>
         <collision>
             <geometry>
@@ -545,6 +576,7 @@
             <geometry>
                 <mesh filename="package://${package_name}/meshes/Femur_6.STL"/>
             </geometry>
+            <material name="femur_color"/>
         </visual>
         <collision>
             <geometry>
@@ -571,6 +603,7 @@
             <geometry>
                 <mesh filename="package://${package_name}/meshes/Tibia_6.STL"/>
             </geometry>
+            <material name="tibia_color"/>
         </visual>
         <collision>
             <geometry>
