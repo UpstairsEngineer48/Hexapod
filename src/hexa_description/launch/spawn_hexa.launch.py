@@ -34,8 +34,12 @@ def generate_launch_description():
 
     # 3) Process the hexa_description.xacro with proper namespacing
     xacro_file = os.path.join(pkg_rover_share, 'urdf', 'hexapod.urdf.xacro')
+    controller_yaml = os.path.join(pkg_rover_share, 'config', 'controller.yaml')
 
-    robot_desc = xacro.process_file(xacro_file, mappings={'prefix': 'hexa_'}).toxml()
+    robot_desc = xacro.process_file(
+        xacro_file,
+        mappings={'prefix': 'hexa_', 'config_dir': pkg_rover_share}
+    ).toxml()
 
     # 4) Robot State Publisher
     rsp_node = Node(
@@ -206,6 +210,34 @@ def generate_launch_description():
         ]
     )
 
+    joint_state_broadcaster_spawner = TimerAction(
+        period=6.0,
+        actions=[
+            Node(
+                package='controller_manager',
+                executable='spawner',
+                name='spawner_joint_state_broadcaster',
+                arguments=['joint_state_broadcaster', '--param-file', controller_yaml],
+                output='screen',
+                parameters=[{'use_sim_time': True}],
+            )
+        ]
+    )
+
+    hexapod_joint_trajectory_controller_spawner = TimerAction(
+        period=7.0,
+        actions=[
+            Node(
+                package='controller_manager',
+                executable='spawner',
+                name='spawner_hexapod_joint_trajectory_controller',
+                arguments=['hexapod_joint_trajectory_controller', '--param-file', controller_yaml],
+                output='screen',
+                parameters=[{'use_sim_time': True}],
+            )
+        ]
+    )
+
     # Assemble launch description
     return LaunchDescription([
         use_sim_time_arg,
@@ -218,4 +250,6 @@ def generate_launch_description():
         camera_info_relay,
         # velodyne_bridge,
         # point_cloud_to_laserscan,
+        joint_state_broadcaster_spawner,
+        hexapod_joint_trajectory_controller_spawner,
     ])

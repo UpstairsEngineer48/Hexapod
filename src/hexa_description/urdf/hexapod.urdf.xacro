@@ -4,10 +4,12 @@
     <xacro:arg name="package_name" default="hexa_description"/>
     <xacro:arg name="robot_name" default="hexapod"/>
     <xacro:arg name="prefix" default=""/>
+    <xacro:arg name="config_dir" default="hexa_description"/>
     
     <xacro:property name="package_name" value="$(arg package_name)"/>
     <xacro:property name="robot_name" value="$(arg robot_name)"/>
     <xacro:property name="prefix" value="$(arg prefix)"/>
+    <xacro:property name="config_dir" value="$(arg config_dir)"/>
 
     <xacro:include filename="materials.xacro"/>
 
@@ -685,7 +687,7 @@
     <!-- GAZEBO IGNITION ROS 2 CONTROL PLUGIN       -->
     <gazebo>
         <plugin filename="ign_ros2_control-system" name="ign_ros2_control::IgnitionROS2ControlPlugin">
-            <parameters>$(find ${package_name})/config/controller.yaml</parameters>
+            <parameters>${config_dir}/config/controller.yaml</parameters>
         </plugin>
     </gazebo>
 
