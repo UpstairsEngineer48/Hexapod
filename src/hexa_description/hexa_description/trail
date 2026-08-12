@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+
+import math
+
+import rclpy
+from rclpy.node import Node
+
+from geometry_msgs.msg import Pose2D
+from std_msgs.msg import Float64MultiArray
+
+from ik import ik
+
+
+class GoToGoal(Node):
+
+    def __init__(self):
+
+        super().__init__("leg_test")
+
+        self.create_subscription(
+            Pose2D,
+            "/odom",
+            self.pose_callback,
+            10
+        )
+
+        self.cmd_pub = self.create_publisher(
+            Float64MultiArray,
+            "/hexapod_joint_trajectory_controller/joint_trajectory",
+            10
+        )
+
+
+
+
+
+        self.get_logger().info(
+            "Leg test node started."
+        )
+
+    def pose_callback(self, msg):
+        angle_msg =Float64MultiArray()
+        angle_msg.data= []
+
+        self.cmd_pub.publish(angle_msg)
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = GoToGoal()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    node.destroy_node()
+    rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()
