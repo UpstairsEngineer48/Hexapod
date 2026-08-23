@@ -1,53 +1,60 @@
 #!/usr/bin/env python3
 
-import math
 
+import math
 import rclpy
 from rclpy.node import Node
+from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+from builtin_interfaces.msg import Duration
 
-from geometry_msgs.msg import Pose2D
-from std_msgs.msg import Float64MultiArray
+JOINT_NAMES = []
+for leg in range(1, 7):
+    JOINT_NAMES += [f"hexa_Joint{leg}_1", f"hexa_Joint{leg}_2", f"hexa_Joint{leg}_3"]
 
-from ik import ik
+PUBLISH_PERIOD_SEC = 1.0     # publish a fresh goal once per second (not 100Hz)
+GOAL_DURATION_SEC = 1.0      # give the controller a full second to get there
 
 
-class GoToGoal(Node):
-
+class LegTest(Node):
     def __init__(self):
-
         super().__init__("leg_test")
 
-        self.create_subscription(
-            Pose2D,
-            "/odom",
-            self.pose_callback,
-            10
-        )
-
         self.cmd_pub = self.create_publisher(
-            Float64MultiArray,
+            JointTrajectory,
             "/hexapod_joint_trajectory_controller/joint_trajectory",
             10
         )
 
-
-
-
-
-        self.get_logger().info(
-            "Leg test node started."
+        self.timer = self.create_timer(
+            0.01,
+            self.control_loop
         )
+        self.get_logger().info("Leg test node started — commanding leg 1 to 10 deg on all 3 joints.")
 
-    def pose_callback(self, msg):
-        angle_msg =Float64MultiArray()
-        angle_msg.data= []
+    def control_loop(self):
+        positions = [0.0] * len(JOINT_NAMES)
 
-        self.cmd_pub.publish(angle_msg)
+        # Leg 1 = indices 0,1,2
+        angle = -1*math.radians(50)
+        positions[3] = -1*angle
+        positions[4] = angle
+        positions[5] = angle
+
+        msg = JointTrajectory()
+        msg.joint_names = JOINT_NAMES
+
+        point = JointTrajectoryPoint()
+        point.positions = positions
+     
+
+        msg.points = [point]
+        self.cmd_pub.publish(msg)
+        self.get_logger().info("Published goal: leg 1 -> 10deg on all 3 joints.")
 
 
 def main(args=None):
     rclpy.init(args=args)
-    node = GoToGoal()
+    node = LegTest()
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:

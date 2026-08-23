@@ -1,12 +1,12 @@
 import math
 
-def ik(A, C, L_coxa, L1, L2):
+def ik(A, C, L_coxa=0.07, L1=0.08, L2=0.15):
     """
     A: [x1, y1, z1] - coxa joint position (base of the leg)
     C: [x3, y3, z3] - target foot position
     L_coxa: coxa link length
-    L1: femur link length
-    L2: tibia link length
+    L1: femur link length : Rviz gave 8cm
+    L2: tibia link length : Rviz gave 15cm
 
     Returns: (gamma, alpha, beta) in degrees
         gamma - coxa (yaw) angle
