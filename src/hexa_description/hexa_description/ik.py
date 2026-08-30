@@ -1,47 +1,32 @@
 import math
 
-def ik(A, C, L_coxa=0.07, L1=0.08, L2=0.15):
+def ik(base, target, L1=0.07, L2=0.08, L3=0.15):
     """
-    A: [x1, y1, z1] - coxa joint position (base of the leg)
-    C: [x3, y3, z3] - target foot position
-    L_coxa: coxa link length
-    L1: femur link length : Rviz gave 8cm
-    L2: tibia link length : Rviz gave 15cm
+    base:   [x1, y1, z1] - Joint 1 position (origin of the arm's frame)
+    target: [x0, y0, z0] - desired end-effector position, world coordinates
 
-    Returns: (gamma, alpha, beta) in degrees
-        gamma - coxa (yaw) angle
-        alpha - femur angle
-        beta  - tibia (knee) angle
+    L1 is accepted as a parameter for completeness / documentation, but
+    matching the derivation exactly, it does not appear in theta2/theta3.
     """
-    x1, y1, z1 = A
-    x3, y3, z3 = C
+    x1, y1, z1 = base
+    xt, yt, zt = target
 
-    dx = x3 - x1
-    dy = y3 - y1
-    dz = z3 - z1
+    X0 = xt - x1
+    Y0 = yt - y1
+    Z0 = zt - z1
 
-    # 1) Coxa yaw angle - depends only on horizontal direction
-    gamma = math.atan2(dy, dx)
-
-    # 2) Horizontal distance to target, minus the coxa link already "used up"
-    r = math.sqrt(dx**2 + dy**2)
-    r_prime = r - L_coxa
-
-    # 3) Effective distance from femur joint to target (2D problem now)
-    D = math.sqrt(r_prime**2 + dz**2)
-
-    # Clamp helper to keep acos domain safe against float error / unreachable targets
     def clamp(v, lo=-1.0, hi=1.0):
         return max(lo, min(hi, v))
 
-    # 4) Law of cosines for knee angle (beta)
-    cos_beta = (L1**2 + L2**2 - D**2) / (2 * L1 * L2)
-    beta = math.acos(clamp(cos_beta))
+    rho_xy = math.sqrt(X0**2 + Y0**2)
+    dist_to_target = math.sqrt(X0**2 + Y0**2 + Z0**2)
 
-    # 5) Femur angle (alpha) = triangle-internal angle minus elevation angle
-    cos_alpha_tri = (L1**2 + D**2 - L2**2) / (2 * L1 * D)
-    alpha_tri = math.acos(clamp(cos_alpha_tri))
-    elevation = math.atan2(dz, r_prime)
-    alpha = alpha_tri - elevation
+    theta1 = math.atan2(Y0, X0)
 
-    return (math.degrees(alpha), math.degrees(beta), math.degrees(gamma))
+    cos_term_2 = (-L3**2 + L2**2 + X0**2 + Y0**2 + Z0**2) / (2 * L2 * dist_to_target)
+    theta2 = math.acos(clamp(cos_term_2)) + math.atan2(Z0, rho_xy)
+
+    cos_term_3 = (X0**2 + Y0**2 + Z0**2 - L2**2 - L3**2) / (2 * L2 * L3)
+    theta3 = -math.acos(clamp(cos_term_3))
+
+    return (math.degrees(theta1), math.degrees(theta2), math.degrees(theta3))

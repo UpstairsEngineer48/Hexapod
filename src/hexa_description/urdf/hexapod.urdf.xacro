@@ -105,7 +105,15 @@
             </geometry>
         </collision>
     </link>
-    
+
+    <gazebo reference="${prefix}Base">
+        <sensor name="imu_sensor" type="imu">
+            <always_on>1</always_on>
+            <update_rate>100</update_rate>
+            <visualize>false</visualize>
+            <topic>imu</topic>
+        </sensor>
+    </gazebo>
 
     <joint name="${prefix}base_link_to_Base" type="fixed">
         <parent link="${prefix}base_link"/>
@@ -641,7 +649,12 @@
         <robot_base_frame>base_footprint</robot_base_frame>
         </plugin>
     </gazebo>
-
+    <gazebo>
+        <plugin
+            filename="libignition-gazebo-imu-system.so"
+            name="ignition::gazebo::systems::Imu">
+        </plugin>
+    </gazebo>
     <!-- ========================================== -->
     <!-- ROS 2 CONTROL HARDWARE INTERFACE           -->
     <!-- ========================================== -->
@@ -690,5 +703,66 @@
             <parameters>${config_dir}/config/controller.yaml</parameters>
         </plugin>
     </gazebo>
+        
+    <!-- ================= FOOT CONTACT SENSORS ================= -->
 
+    <gazebo reference="${prefix}Tibia_1">
+        <sensor name="contact_sensor_1" type="contact">
+            <always_on>true</always_on>
+            <update_rate>50</update_rate>
+            <contact>
+                <collision>collision</collision>
+            </contact>
+        </sensor>
+    </gazebo>
+
+    <gazebo reference="${prefix}Tibia_2">
+        <sensor name="contact_sensor_2" type="contact">
+            <always_on>true</always_on>
+            <update_rate>50</update_rate>
+            <contact>
+                <collision>collision</collision>
+            </contact>
+        </sensor>
+    </gazebo>
+
+    <gazebo reference="${prefix}Tibia_3">
+        <sensor name="contact_sensor_3" type="contact">
+            <always_on>true</always_on>
+            <update_rate>50</update_rate>
+            <contact>
+                <collision>collision</collision>
+            </contact>
+        </sensor>
+    </gazebo>
+
+    <gazebo reference="${prefix}Tibia_4">
+        <sensor name="contact_sensor_4" type="contact">
+            <always_on>true</always_on>
+            <update_rate>50</update_rate>
+            <contact>
+                <collision>collision</collision>
+            </contact>
+        </sensor>
+    </gazebo>
+
+    <gazebo reference="${prefix}Tibia_5">
+        <sensor name="contact_sensor_5" type="contact">
+            <always_on>true</always_on>
+            <update_rate>50</update_rate>
+            <contact>
+                <collision>collision</collision>
+            </contact>
+        </sensor>
+    </gazebo>
+
+    <gazebo reference="${prefix}Tibia_6">
+        <sensor name="contact_sensor_6" type="contact">
+            <always_on>true</always_on>
+            <update_rate>50</update_rate>
+            <contact>
+                <collision>collision</collision>
+            </contact>
+        </sensor>
+    </gazebo>
 </robot>
