@@ -31,16 +31,6 @@ def clamp(v, lo=-1.0, hi=1.0):
 
 
 class LegMount:
-    """
-    Fixed geometry describing where/how a leg is bolted onto the body.
-    mount_xy: (x, y) offset of this leg's Joint 1 from body center, in
-              the BODY frame, measured with the robot at rest.
-    mount_yaw: the angle (radians) this leg's own local x-axis is rotated
-               relative to the body's forward (+x) axis. e.g. a leg
-               pointing straight out to the side would have mount_yaw
-               = +-90 deg; a leg pointing forward-diagonally might be
-               +-30 deg, etc. Measure this from your CAD/URDF.
-    """
     def __init__(self, mount_xy, mount_yaw):
         self.mount_xy = mount_xy
         self.mount_yaw = mount_yaw
