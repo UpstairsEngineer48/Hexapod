@@ -70,9 +70,7 @@ class TripodGait(Node):
         self.stride_x = self.body_vx * self.cycle_time
         self.stride_y = self.body_vy * self.cycle_time
 
-        # ---- Leg mount geometry: TUNE THESE to your actual robot ----
-        # Angles/offsets below are placeholders - replace with your
-        # hexapod's real CAD/URDF values.
+       
         self.mounts = {
             1: LegMount((0.067149, 0.11215), 2.3578),
             2: LegMount((0.08925, 0.0), 1.6011),
@@ -140,14 +138,13 @@ class TripodGait(Node):
         dx_body, dy_body, dz = self.body_frame_foot_offset(leg_id, t)
 
         # Rotate the body-frame offset into the leg's local frame by
-        # applying the inverse of the mount rotation.
+
         cos_a = math.cos(-mount.mount_yaw)
         sin_a = math.sin(-mount.mount_yaw)
         dx_leg = dx_body * cos_a - dy_body * sin_a
         dy_leg = dx_body * sin_a + dy_body * cos_a
 
-        # Add the neutral standing offset (foot's resting position in
-        # this leg's local frame) on top of the gait-driven delta.
+        # Adds the neutral standing offset (foot's resting position inthis leg's local frame) on top of the gait-driven delta.
         x = self.neutral_reach + dx_leg
         y = dy_leg
         z = self.neutral_z + dz
