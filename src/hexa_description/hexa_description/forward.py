@@ -46,19 +46,19 @@ class TripodGait(Node):
             10
         )
 
-        self.dt = 0.01
-        self.cycle_time = 1.0
-        self.step_height = 0.08
-        self.L2 = 0.08
-        self.L3 = 0.15
+        self.dt=0.01
+        self.cycle_time=1.0
+        self.step_height=0.08
+        self.L2=0.08
+        self.L3=0.15
 
 
-        self.body_vx = 0.1   # m/s in body's forward direction
-        self.body_vy = 0.0    # m/s in body's lateral direction
+        self.body_vx=0.01  # m/s in body's forward direction
+        self.body_vy=0.0    # m/s in body's lateral direction
 
         # Stride length derived from body velocity and cycle time -how far the body (hence each foot's stance sweep) travels per full gait cycle.
-        self.stride_x = self.body_vx * self.cycle_time
-        self.stride_y = self.body_vy * self.cycle_time
+        self.stride_x=self.body_vx*self.cycle_time
+        self.stride_y=self.body_vy*self.cycle_time
 
        
         self.mounts = {
@@ -78,28 +78,28 @@ class TripodGait(Node):
         self.t = 0.0
         self.timer = self.create_timer(self.dt, self.update)
 
-    def body_frame_foot_offset(self, leg_id, t):
+    def body_frame_foot_offset(self,leg_id,t):
 
-        half_cycle = self.cycle_time / 2
+        half_cycle=self.cycle_time/2
 
         # Tripod A: legs 1,3,5
-        if leg_id == 1 or leg_id == 3 or leg_id == 5:
+        if leg_id==1 or leg_id==3 or leg_id==5:
 
-            if t < half_cycle:
+            if t<half_cycle:
                 # Swing
-                st = t / half_cycle
+                st=t/half_cycle
 
-                dx = self.stride_x * (st - 0.5)
-                dy = self.stride_y * (st - 0.5)
-                dz = self.step_height * math.sin(math.pi * st)
+                dx=self.stride_x*(st-0.5)
+                dy=self.stride_y*(st-0.5)
+                dz=self.step_height*math.sin(math.pi*st)
 
             else:
                 # Stance
-                st = (t - half_cycle) / half_cycle
+                st=(t-half_cycle)/half_cycle
 
-                dx = self.stride_x * (0.5 - st)
-                dy = self.stride_y * (0.5 - st)
-                dz = 0.0
+                dx=self.stride_x * (0.5 - st)
+                dy=self.stride_y * (0.5 - st)
+                dz=0.0
 
         # Tripod B: legs 2,4,6
         else:
@@ -151,12 +151,7 @@ class TripodGait(Node):
             else:
                 L3 = self.L3
 
-            theta1_deg, theta2_deg, theta3_deg = ik(
-                [0.0, 0.0, 0.0],
-                [x, y, z],
-                L2=self.L2,
-                L3=L3
-            )
+            theta1_deg, theta2_deg, theta3_deg = ik([0.0, 0.0, 0.0],[x, y, z],L2=self.L2,L3=L3)
             theta1 = math.radians(theta1_deg)
             theta2 = math.radians(theta2_deg)
             theta3 = math.radians(theta3_deg)
