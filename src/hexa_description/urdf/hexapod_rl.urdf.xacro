@@ -1,0 +1,806 @@
+<?xml version="1.0"?>
+<!--
+  RL / FAST-SIM FORK of hexapod.urdf.xacro
+  =========================================
+  Full copy of the original, with ONE difference: <collision> geometry on
+  Base, Coxa_1-6, and Femur_1-6 has been swapped from full STL mesh to
+  axis-aligned box primitives (bounding-box fit), to cut ODE contact-solve
+  cost for RL training throughput. Tibia collisions were already spheres
+  in the original and are unchanged. All <visual> geometry still uses the
+  original STL meshesvisual appearance is identical to the original.
+
+  Box dims/origins were computed from each mesh's local-frame bounding box
+  (see bbox_extract.py). Original hexapod.urdf.xacro is untouched 
+  point your normal (non-RL) launch files at that file as before, and
+  point your RL launch/model-generation at this file instead.
+-->
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="hexapod">
+    
+    <xacro:arg name="package_name" default="hexa_description"/>
+    <xacro:arg name="robot_name" default="hexapod"/>
+    <xacro:arg name="prefix" default=""/>
+    <xacro:arg name="config_dir" default="hexa_description"/>
+    
+    <xacro:property name="package_name" value="$(arg package_name)"/>
+    <xacro:property name="robot_name" value="$(arg robot_name)"/>
+    <xacro:property name="prefix" value="$(arg prefix)"/>
+    <xacro:property name="config_dir" value="$(arg config_dir)"/>
+
+    <xacro:include filename="materials.xacro"/>
+
+    <!-- Visual colors, referenced by name in each link's <material> tag -->
+    <material name="base_color">
+        <color rgba="0.15 0.15 0.15 1.0"/>
+    </material>
+    <material name="coxa_color">
+        <color rgba="0.10 0.35 0.75 1.0"/>
+    </material>
+    <material name="femur_color">
+        <color rgba="0.85 0.45 0.05 1.0"/>
+    </material>
+    <material name="tibia_color">
+        <color rgba="0.05 0.05 0.05 1.0"/>
+    </material>
+
+    <!-- ========================================== -->
+    <!-- TRANSMISSION MACRO FOR HEXAPOD LEGS        -->
+    <!-- ========================================== -->
+    <xacro:macro name="leg_transmission" params="leg_num prefix">
+        <!-- Coxa Joint (Base to Coxa) -->
+        <transmission name="${prefix}Joint${leg_num}_1_tran">
+            <type>transmission_interface/SimpleTransmission</type>
+            <joint name="${prefix}Joint${leg_num}_1">
+                <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            </joint>
+            <actuator name="${prefix}Joint${leg_num}_1_motor">
+                <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+                <mechanicalReduction>1</mechanicalReduction>
+            </actuator>
+        </transmission>
+
+        <!-- Femur Joint (Coxa to Femur) -->
+        <transmission name="${prefix}Joint${leg_num}_2_tran">
+            <type>transmission_interface/SimpleTransmission</type>
+            <joint name="${prefix}Joint${leg_num}_2">
+                <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            </joint>
+            <actuator name="${prefix}Joint${leg_num}_2_motor">
+                <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+                <mechanicalReduction>1</mechanicalReduction>
+            </actuator>
+        </transmission>
+
+        <!-- Tibia Joint (Femur to Tibia) -->
+        <transmission name="${prefix}Joint${leg_num}_3_tran">
+            <type>transmission_interface/SimpleTransmission</type>
+            <joint name="${prefix}Joint${leg_num}_3">
+                <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            </joint>
+            <actuator name="${prefix}Joint${leg_num}_3_motor">
+                <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+                <mechanicalReduction>1</mechanicalReduction>
+            </actuator>
+        </transmission>
+    </xacro:macro>
+    <!-- ========================================== -->
+
+    <!-- Minimal frames -->
+    <link name="${prefix}base_footprint">
+    </link>
+
+    <link name="${prefix}base_link">
+    </link>
+
+    <joint name="${prefix}base_footprint_to_base_link" type="fixed">
+        <parent link="${prefix}base_footprint"/>
+        <child link="${prefix}base_link"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+
+    <!-- Base link and mesh -->
+    <link name="${prefix}Base">
+        <inertial>
+            <origin xyz="3.17137522879131E-06 -3.31180346009379E-06 0.0185997063575468" rpy="0 0 0"/>
+            <mass value="0.516033712055295"/>
+            <inertia ixx="0.00150227819625822" ixy="5.41358455149925E-09" ixz="-1.21815711093665E-09" iyy="0.000814451751266275" iyz="-4.64061267975536E-19" izz="0.00226054167247862"/>
+        </inertial>
+        
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="package://${package_name}/meshes/Base.STL"/>
+            </geometry>
+            <material name="base_color"/>
+        </visual>
+
+        <collision>
+            <origin xyz="0.0000 0.0000 0.0227" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.2160 0.2709 0.0554"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <gazebo reference="${prefix}Base">
+        <sensor name="imu_sensor" type="imu">
+            <always_on>1</always_on>
+            <update_rate>100</update_rate>
+            <visualize>false</visualize>
+            <topic>imu</topic>
+        </sensor>
+    </gazebo>
+
+    <joint name="${prefix}base_link_to_Base" type="fixed">
+        <parent link="${prefix}base_link"/>
+        <child link="${prefix}Base"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+
+    <!-- Template for leg: Coxa/Femur/Tibia groups repeated 6x. Limits set to conservative defaults. -->
+
+    <!-- Coxa 1 -->
+    <link name="${prefix}Coxa_1">
+        <inertial>
+            <origin xyz="0.000577862012579221 -0.0317727763355633 0.0354243258351977" rpy="0 0 0"/>
+            <mass value="0.058206986384816"/>
+            <inertia ixx="2.09518881532946E-05" ixy="-5.83217116289199E-12" ixz="2.58985476936146E-06" iyy="1.97804446474374E-05" iyz="2.51053441650112E-06" izz="2.06393092896648E-05"/>
+        </inertial>
+        <visual>
+            <geometry>
+                <mesh filename="package://${package_name}/meshes/Coxa_1.STL"/>
+            </geometry>
+            <material name="coxa_color"/>
+        </visual>
+        <collision>
+            <origin xyz="0.0015 -0.0323 0.0350" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.0685 0.0685 0.1000"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <joint name="${prefix}Joint1_1" type="revolute">
+        <parent link="${prefix}Base"/>
+        <child link="${prefix}Coxa_1"/>
+        <origin xyz="0.067149 0.11215 0.05285" rpy="1.5708 0 2.3578"/>
+        <axis xyz="0 -1 0"/>
+        <limit lower="-1.5708" upper="1.5708" effort="5" velocity="2"/>
+    </joint>
+
+
+    <link name="${prefix}Femur_1">
+        <inertial>
+            <origin xyz="0.00548415363509747 -0.0355181600169509 0.0386098257844835" rpy="0 0 0"/>
+            <mass value="0.10712888900759"/>
+            <inertia ixx="5.18535588310174E-05" ixy="-1.40002219798617E-10" ixz="-5.13657075411247E-06" iyy="4.90722656444643E-05" iyz="2.0073057216516E-11" izz="1.67583851946084E-05"/>
+        </inertial>
+        <visual>
+            <geometry>
+                <mesh filename="package://${package_name}/meshes/Femur_1.STL"/>
+            </geometry>
+            <material name="femur_color"/>
+        </visual>
+        <collision>
+            <origin xyz="0.0057 -0.0315 0.0386" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.0458 0.0521 0.1170"/>
+            </geometry>
+        </collision>
+    </link>
+
+
+    <joint name="${prefix}Joint1_2" type="revolute">
+        <parent link="${prefix}Coxa_1"/>
+        <child link="${prefix}Femur_1"/>
+        <origin xyz="-0.03075 -0.03075 0.07" rpy="0 0 1.5708"/>
+        <axis xyz="0 -1 0"/>
+        <limit lower="-1.5708" upper="1.5708" effort="5" velocity="2"/>
+    </joint>
+
+    <link name="${prefix}Tibia_1">
+        <inertial>
+            <origin xyz="-0.0138680196135901 -0.0324549603873032 0.0624085311603042" rpy="0 0 0"/>
+            <mass value="0.0754192114511324"/>
+            <inertia ixx="8.21130142628132E-05" ixy="1.60749444883877E-08" ixz="3.75894773005154E-05" iyy="0.000101713737698438" iyz="2.38816460912834E-06" izz="4.78951327218008E-05"/>
+        </inertial>
+        <visual>
+            <geometry>
+                <mesh filename="package://${package_name}/meshes/Tibia_1.STL"/>
+            </geometry>
+            <material name="tibia_color"/>
+        </visual>
+        <collision>
+            <origin xyz="-0.0716 -0.0404 0.1549" rpy="0 0 0"/>
+            <geometry>
+                <sphere radius="0.012"/>
+            </geometry>
+        </collision>
+    </link>
+
+
+    <joint name="${prefix}Joint1_3" type="revolute">
+        <parent link="${prefix}Femur_1"/>
+        <child link="${prefix}Tibia_1"/>
+        <origin xyz="0.011069 -0.00075 0.077211" rpy="0 -0.95571 0"/>
+        <axis xyz="0 -1 0"/>
+        <limit lower="-2.0" upper="0.5" effort="5" velocity="2"/>
+    </joint>
+
+    <!-- Coxa 2 -->
+    <link name="${prefix}Coxa_2">
+        <inertial>
+            <origin xyz="0.000577862012579344 -0.0317727763355634 0.0354243258351973" rpy="0 0 0"/>
+            <mass value="0.058206986384815"/>
+            <inertia ixx="2.09518881532943E-05" ixy="-5.83217106619788E-12" ixz="2.58985476936139E-06" iyy="1.97804446474369E-05" iyz="2.51053441650115E-06" izz="2.06393092896644E-05"/>
+        </inertial>
+        <visual>
+            <geometry>
+                <mesh filename="package://${package_name}/meshes/Coxa_2.STL"/>
+            </geometry>
+            <material name="coxa_color"/>
+        </visual>
+        <collision>
+            <origin xyz="0.0015 -0.0323 0.0350" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.0685 0.0685 0.1000"/>
+            </geometry>
+        </collision>
+    </link>
+
+
+    <joint name="${prefix}Joint2_1" type="revolute">
+        <parent link="${prefix}Base"/>
+        <child link="${prefix}Coxa_2"/>
+        <origin xyz="0.08925 0 0.05285" rpy="1.5708 0 1.6011"/>
+        <axis xyz="0 -1 0"/>
+        <limit lower="-1.5708" upper="1.5708" effort="5" velocity="2"/>
+    </joint>
+
+    <link name="${prefix}Femur_2">
+        <inertial>
+            <origin xyz="0.0142167130076838 -0.0347681597363993 0.0363193553535422" rpy="0 0 0"/>
+            <mass value="0.107128867042949"/>
+            <inertia ixx="4.77633033042784E-05" ixy="1.31761819081924E-10" ixz="-1.23774873097642E-05" iyy="4.90722655777639E-05" iyz="-5.13556803500408E-11" izz="2.08486251280525E-05"/>
+        </inertial>
+        <visual>
+            <geometry>
+                <mesh filename="package://${package_name}/meshes/Femur_2.STL"/>
+            </geometry>
+            <material name="femur_color"/>
+        </visual>
+        <collision>
+            <origin xyz="0.0140 -0.0308 0.0364" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.0692 0.0521 0.1167"/>
+            </geometry>
+        </collision>
+    </link>
+
+
+    <joint name="${prefix}Joint2_2" type="revolute">
+        <parent link="${prefix}Coxa_2"/>
+        <child link="${prefix}Femur_2"/>
+        <origin xyz="-0.03075 -0.03075 0.07" rpy="0 0 1.5708"/>
+        <axis xyz="0 -1 0"/>
+        <limit lower="-1.5708" upper="1.5708" effort="5" velocity="2"/>
+    </joint>
+
+    <link name="${prefix}Tibia_2">
+        <inertial>
+            <origin xyz="-0.0138677597249909 -0.0324550056850968 0.0624082245511181" rpy="0 0 0"/>
+            <mass value="0.075419455199217"/>
+            <inertia ixx="8.21142033520056E-05" ixy="1.59973639579329E-08" ixz="3.75906485740428E-05" iyy="0.000101716150136195" iyz="2.38824872556098E-06" izz="4.78961698795125E-05"/>
+        </inertial>
+        <visual>
+            <geometry>
+                <mesh filename="package://${package_name}/meshes/Tibia_2.STL"/>
+            </geometry>
+            <material name="tibia_color"/>
+        </visual>
+        <collision>
+            <origin xyz="-0.0716 -0.0404 0.1549" rpy="0 0 0"/>
+            <geometry>
+                <sphere radius="0.012"/>
+            </geometry>
+        </collision>
+    </link>
+
+
+    <joint name="${prefix}Joint2_3" type="revolute">
+        <parent link="${prefix}Femur_2"/>
+        <child link="${prefix}Tibia_2"/>
+        <origin xyz="0.028338 0.00075 0.07267" rpy="0 -0.79606 0"/>
+        <axis xyz="0 -1 0"/>
+        <limit lower="-2.0" upper="0.5" effort="5" velocity="2"/>
+    </joint>
+
+    <!-- Coxa 3 -->
+    <link name="${prefix}Coxa_3">
+        <inertial>
+            <origin xyz="0.000577862012579193 -0.0317727763355633 0.0354243258351977" rpy="0 0 0"/>
+            <mass value="0.058206986384816"/>
+            <inertia ixx="2.09518881532946E-05" ixy="-5.83217116373902E-12" ixz="2.58985476936145E-06" iyy="1.97804446474374E-05" iyz="2.51053441650111E-06" izz="2.06393092896648E-05"/>
+        </inertial>
+        <visual>
+            <geometry>
+                <mesh filename="package://${package_name}/meshes/Coxa_3.STL"/>
+            </geometry>
+            <material name="coxa_color"/>
+        </visual>
+        <collision>
+            <origin xyz="0.0015 -0.0323 0.0350" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.0685 0.0685 0.1000"/>
+            </geometry>
+        </collision>
+    </link>
+
+
+    <joint name="${prefix}Joint3_1" type="revolute">
+        <parent link="${prefix}Base"/>
+        <child link="${prefix}Coxa_3"/>
+        <origin xyz="0.067149 -0.11215 0.05585" rpy="1.5708 0 0.80016"/>
+        <axis xyz="0 -1 0"/>
+        <limit lower="-1.5708" upper="1.5708" effort="5" velocity="2"/>
+    </joint>
+
+    <link name="${prefix}Femur_3">
+        <inertial>
+            <origin xyz="0.0124923057730173 -0.0347681599456048 0.0369479735594456" rpy="0 0 0"/>
+            <mass value="0.1071288893298"/>
+            <inertia ixx="4.88670640388268E-05" ixy="1.34047909963352E-10" ixz="-1.10578824251472E-05" iyy="4.90722656252189E-05" iyz="-4.50447281183348E-11" izz="1.97448801612347E-05"/>
+        </inertial>
+        <visual>
+            <geometry>
+                <mesh filename="package://${package_name}/meshes/Femur_3.STL"/>
+            </geometry>
+            <material name="femur_color"/>
+        </visual>
+        <collision>
+            <origin xyz="0.0123 -0.0308 0.0371" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.0647 0.0521 0.1172"/>
+            </geometry>
+        </collision>
+    </link>
+
+
+    <joint name="${prefix}Joint3_2" type="revolute">
+        <parent link="${prefix}Coxa_3"/>
+        <child link="${prefix}Femur_3"/>
+        <origin xyz="-0.03075 -0.03075 0.07" rpy="0 0 1.5708"/>
+        <axis xyz="0 -1 0"/>
+        <limit lower="-1.5708" upper="1.5708" effort="5" velocity="2"/>
+    </joint>
+
+    <link name="${prefix}Tibia_3">
+        <inertial>
+            <origin xyz="-0.0138680607149134 -0.0324549674801066 0.0624085192294458" rpy="0 0 0"/>
+            <mass value="0.0754192264755821"/>
+            <inertia ixx="8.21130557234919E-05" ixy="1.61072454435789E-08" ixz="3.75894897845248E-05" iyy="0.000101713750762835" iyz="2.38816334021167E-06" izz="4.78950705242381E-05"/>
+        </inertial>
+        <visual>
+            <geometry>
+                <mesh filename="package://${package_name}/meshes/Tibia_3.STL"/>
+            </geometry>
+            <material name="tibia_color"/>
+        </visual>
+        <collision>
+            <origin xyz="-0.0716 -0.0404 0.1549" rpy="0 0 0"/>
+            <geometry>
+                <sphere radius="0.012"/>
+            </geometry>
+        </collision>
+    </link>
+
+
+    <joint name="${prefix}Joint3_3" type="revolute">
+        <parent link="${prefix}Femur_3"/>
+        <child link="${prefix}Tibia_3"/>
+        <origin xyz="0.024888 0.00075 0.073923" rpy="0 -0.79606 0"/>
+        <axis xyz="0 -1 0"/>
+        <limit lower="-2.0" upper="0.5" effort="5" velocity="2"/>
+    </joint>
+
+    <!-- Coxa 4 -->
+    <link name="${prefix}Coxa_4">
+        <inertial>
+            <origin xyz="0.000577862012579221 -0.0317727763355633 0.0354243258351977" rpy="0 0 0"/>
+            <mass value="0.0582069863848161"/>
+            <inertia ixx="2.09518881532946E-05" ixy="-5.83217116691539E-12" ixz="2.58985476936146E-06" iyy="1.97804446474374E-05" iyz="2.51053441650112E-06" izz="2.06393092896649E-05"/>
+        </inertial>
+        <visual>
+            <geometry>
+                <mesh filename="package://${package_name}/meshes/Coxa_4.STL"/>
+            </geometry>
+            <material name="coxa_color"/>
+        </visual>
+        <collision>
+            <origin xyz="0.0015 -0.0323 0.0350" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.0685 0.0685 0.1000"/>
+            </geometry>
+        </collision>
+    </link>
+
+
+    <joint name="${prefix}Joint4_1" type="revolute">
+        <parent link="${prefix}Base"/>
+        <child link="${prefix}Coxa_4"/>
+        <origin xyz="-0.067149 -0.11215 0.05285" rpy="1.5708 0 -0.7472"/>
+        <axis xyz="0 -1 0"/>
+        <limit lower="-1.5708" upper="1.5708" effort="5" velocity="2"/>
+    </joint>
+
+    <link name="${prefix}Femur_4">
+        <inertial>
+            <origin xyz="0.0106250052421249 -0.0347681599253407 0.0375275860554965" rpy="0 0 0"/>
+            <mass value="0.107128889458837"/>
+            <inertia ixx="4.99008396656431E-05" ixy="1.36136048979621E-10" ixz="-9.5447508653378E-06" iyy="4.90722656382846E-05" iyz="-3.82635614824619E-11" izz="1.87111046061255E-05"/>
+        </inertial>
+        <visual>
+            <geometry>
+                <mesh filename="package://${package_name}/meshes/Femur_4.STL"/>
+            </geometry>
+            <material name="femur_color"/>
+        </visual>
+        <collision>
+            <origin xyz="0.0104 -0.0308 0.0376" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.0597 0.0521 0.1175"/>
+            </geometry>
+        </collision>
+    </link>
+
+
+    <joint name="${prefix}Joint4_2" type="revolute">
+        <parent link="${prefix}Coxa_4"/>
+        <child link="${prefix}Femur_4"/>
+        <origin xyz="-0.03075 -0.03075 0.07" rpy="0 0 1.5708"/>
+        <axis xyz="0 -1 0"/>
+        <limit lower="-1.5708" upper="1.5708" effort="5" velocity="2"/>
+    </joint>
+
+    <link name="${prefix}Tibia_4">
+        <inertial>
+            <origin xyz="-0.0138676802679795 -0.0324549919751951 0.0624081139272412" rpy="0 0 0"/>
+            <mass value="0.0754193444037423"/>
+            <inertia ixx="8.21128644307283E-05" ixy="1.60777020452252E-08" ixz="3.75893890827016E-05" iyy="0.000101713545020214" iyz="2.38815259532932E-06" izz="4.78950777380955E-05"/>
+        </inertial>
+        <visual>
+            <geometry>
+                <mesh filename="package://${package_name}/meshes/Tibia_4.STL"/>
+            </geometry>
+            <material name="tibia_color"/>
+        </visual>
+        <collision>
+            <origin xyz="-0.0716 -0.0404 0.1549" rpy="0 0 0"/>
+            <geometry>
+                <sphere radius="0.012"/>
+            </geometry>
+        </collision>
+    </link>
+
+
+    <joint name="${prefix}Joint4_3" type="revolute">
+        <parent link="${prefix}Femur_4"/>
+        <child link="${prefix}Tibia_4"/>
+        <origin xyz="0.021152 0.00075 0.075077" rpy="0 -1.087 0"/>
+        <axis xyz="0 -1 0"/>
+        <limit lower="-2.0" upper="0.5" effort="5" velocity="2"/>
+    </joint>
+
+    <!-- Coxa 5 -->
+    <link name="${prefix}Coxa_5">
+        <inertial>
+            <origin xyz="0.000577862012579334 -0.0317727763355634 0.0354243258351973" rpy="0 0 0"/>
+            <mass value="0.0582069863848149"/>
+            <inertia ixx="2.09518881532944E-05" ixy="-5.83217106949006E-12" ixz="2.58985476936138E-06" iyy="1.9780444647437E-05" iyz="2.51053441650115E-06" izz="2.06393092896644E-05"/>
+        </inertial>
+        <visual>
+            <geometry>
+                <mesh filename="package://${package_name}/meshes/Coxa_5.STL"/>
+            </geometry>
+            <material name="coxa_color"/>
+        </visual>
+        <collision>
+            <origin xyz="0.0015 -0.0323 0.0350" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.0685 0.0685 0.1000"/>
+            </geometry>
+        </collision>
+    </link>
+
+
+    <joint name="${prefix}Joint5_1" type="revolute">
+        <parent link="${prefix}Base"/>
+        <child link="${prefix}Coxa_5"/>
+        <origin xyz="-0.08925 0 0.05285" rpy="1.5708 0 -1.5753"/>
+        <axis xyz="0 -1 0"/>
+        <limit lower="-1.5708" upper="1.5708" effort="5" velocity="2"/>
+    </joint>
+
+    <link name="${prefix}Femur_5">
+        <inertial>
+            <origin xyz="0.00789662242713735 -0.0347681599630932 0.0381895004101029" rpy="0 0 0"/>
+            <mass value="0.107128865114784"/>
+            <inertia ixx="5.10717969304319E-05" ixy="-1.38463003283807E-10" ixz="-7.29444963032223E-06" iyy="4.90722655207553E-05" iyz="2.88007958013131E-11" izz="1.7540130015678E-05"/>
+        </inertial>
+        <visual>
+            <geometry>
+                <mesh filename="package://${package_name}/meshes/Femur_5.STL"/>
+            </geometry>
+            <material name="femur_color"/>
+        </visual>
+        <collision>
+            <origin xyz="0.0081 -0.0308 0.0381" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.0525 0.0521 0.1173"/>
+            </geometry>
+        </collision>
+    </link>
+
+
+    <joint name="${prefix}Joint5_2" type="revolute">
+        <parent link="${prefix}Coxa_5"/>
+        <child link="${prefix}Femur_5"/>
+        <origin xyz="-0.03075 -0.03075 0.07" rpy="0 0 1.5708"/>
+        <axis xyz="0 -1 0"/>
+        <limit lower="-1.5708" upper="1.5708" effort="5" velocity="2"/>
+    </joint>
+
+    <link name="${prefix}Tibia_5">
+        <inertial>
+            <origin xyz="-0.0138677584148455 -0.0324550061892322 0.0624082248397783" rpy="0 0 0"/>
+            <mass value="0.0754194500255794"/>
+            <inertia ixx="8.21141952956945E-05" ixy="1.59948220075322E-08" ixz="3.75906472608689E-05" iyy="0.000101716141896386" iyz="2.38825424699117E-06" izz="4.78961714928674E-05"/>
+        </inertial>
+        <visual>
+            <geometry>
+                <mesh filename="package://${package_name}/meshes/Tibia_5.STL"/>
+            </geometry>
+            <material name="tibia_color"/>
+        </visual>
+        <collision>
+            <origin xyz="-0.0716 -0.0404 0.1549" rpy="0 0 0"/>
+            <geometry>
+                <sphere radius="0.012"/>
+            </geometry>
+        </collision>
+    </link>
+
+
+    <joint name="${prefix}Joint5_3" type="revolute">
+        <parent link="${prefix}Femur_5"/>
+        <child link="${prefix}Tibia_5"/>
+        <origin xyz="0.015893 0 0.076364" rpy="0 -0.79606 0"/>
+        <axis xyz="0 -1 0"/>
+        <limit lower="-2.0" upper="0.5" effort="5" velocity="2"/>
+    </joint>
+
+    <!-- Coxa 6 -->
+    <link name="${prefix}Coxa_6">
+        <inertial>
+            <origin xyz="0.000577862012579221 -0.0317727763355633 0.0354243258351977" rpy="0 0 0"/>
+            <mass value="0.0582069863848159"/>
+            <inertia ixx="2.09518881532946E-05" ixy="-5.83217113176353E-12" ixz="2.58985476936145E-06" iyy="1.97804446474373E-05" iyz="2.51053441650112E-06" izz="2.06393092896648E-05"/>
+        </inertial>
+        <visual>
+            <geometry>
+                <mesh filename="package://${package_name}/meshes/Coxa_6.STL"/>
+            </geometry>
+            <material name="coxa_color"/>
+        </visual>
+        <collision>
+            <origin xyz="0.0015 -0.0323 0.0350" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.0685 0.0685 0.1000"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <joint name="${prefix}Joint6_1" type="revolute">
+        <parent link="${prefix}Base"/>
+        <child link="${prefix}Coxa_6"/>
+        <origin xyz="-0.067149 0.11215 0.05285" rpy="1.5708 0 -2.5044"/>
+        <axis xyz="0 -1 0"/>
+        <limit lower="-1.5708" upper="1.5708" effort="5" velocity="2"/>
+    </joint>
+
+    <link name="${prefix}Femur_6">
+        <inertial>
+            <origin xyz="0.00675394593304171 -0.0355181598715529 0.0384080569020034" rpy="0 0 0"/>
+            <mass value="0.107128889683649"/>
+            <inertia ixx="5.14769513685849E-05" ixy="-1.39253820187571E-10" ixz="-6.28169057953268E-06" iyy="4.90722656194813E-05" iyz="2.45845148700639E-11" izz="1.71349930220452E-05"/>
+        </inertial>
+        <visual>
+            <geometry>
+                <mesh filename="package://${package_name}/meshes/Femur_6.STL"/>
+            </geometry>
+            <material name="femur_color"/>
+        </visual>
+        <collision>
+            <origin xyz="0.0069 -0.0315 0.0384" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.0494 0.0521 0.1172"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <joint name="${prefix}Joint6_2" type="revolute">
+        <parent link="${prefix}Coxa_6"/>
+        <child link="${prefix}Femur_6"/>
+        <origin xyz="-0.03075 -0.03075 0.07" rpy="0 0 1.5708"/>
+        <axis xyz="0 -1 0"/>
+        <limit lower="-1.5708" upper="1.5708" effort="5" velocity="2"/>
+    </joint>
+
+    <link name="${prefix}Tibia_6">
+        <inertial>
+            <origin xyz="-0.0138676550200287 -0.0324549934835745 0.0624080741697963" rpy="0 0 0"/>
+            <mass value="0.0754192670395059"/>
+            <inertia ixx="8.21140496751916E-05" ixy="1.59843101322849E-08" ixz="3.75903641239812E-05" iyy="0.000101715600934306" iyz="2.38830021421716E-06" izz="4.78958781380929E-05"/>
+        </inertial>
+        <visual>
+            <geometry>
+                <mesh filename="package://${package_name}/meshes/Tibia_6.STL"/>
+            </geometry>
+            <material name="tibia_color"/>
+        </visual>
+        <collision>
+            <origin xyz="-0.0716 -0.0404 0.1549" rpy="0 0 0"/>
+            <geometry>
+                <sphere radius="0.012"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <joint name="${prefix}Joint6_3" type="revolute">
+        <parent link="${prefix}Femur_6"/>
+        <child link="${prefix}Tibia_6"/>
+        <origin xyz="0.013608 -0.00075 0.076804" rpy="0 -1.159 0"/>
+        <axis xyz="0 -1 0"/>
+        <limit lower="-2.0" upper="0.5" effort="5" velocity="2"/>
+    </joint>
+
+    <!-- ========================================== -->
+    <!-- INVOKING TRANSMISSION MACROS FOR 6 LEGS    -->
+    <!-- ========================================== -->
+    <xacro:leg_transmission leg_num="1" prefix="${prefix}"/>
+    <xacro:leg_transmission leg_num="2" prefix="${prefix}"/>
+    <xacro:leg_transmission leg_num="3" prefix="${prefix}"/>
+    <xacro:leg_transmission leg_num="4" prefix="${prefix}"/>
+    <xacro:leg_transmission leg_num="5" prefix="${prefix}"/>
+    <xacro:leg_transmission leg_num="6" prefix="${prefix}"/>
+    <!-- ========================================== -->
+
+    <gazebo>
+        <plugin filename="ignition-gazebo-odometry-publisher-system" name="ignition::gazebo::systems::OdometryPublisher">
+        <odom_topic>odom</odom_topic>
+        <odom_frame>odom</odom_frame>
+        <tf_topic>tf</tf_topic>
+        <robot_base_frame>base_footprint</robot_base_frame>
+        </plugin>
+    </gazebo>
+    <gazebo>
+        <plugin
+            filename="libignition-gazebo-imu-system.so"
+            name="ignition::gazebo::systems::Imu">
+        </plugin>
+            <plugin
+            filename="libignition-gazebo-contact-system.so"
+            name="ignition::gazebo::systems::Contact">
+        </plugin>
+    </gazebo>
+    <!-- ========================================== -->
+    <!-- ROS 2 CONTROL HARDWARE INTERFACE           -->
+    <!-- ========================================== -->
+    <ros2_control name="IgnitionSystem" type="system">
+        <hardware>
+            <plugin>ign_ros2_control/IgnitionSystem</plugin>
+        </hardware>
+
+        <!-- Macro to define the interfaces for a single leg -->
+        <xacro:macro name="ros2_control_leg" params="leg_num prefix">
+            <!-- Coxa -->
+            <joint name="${prefix}Joint${leg_num}_1">
+                <command_interface name="position"/>
+                <state_interface name="position"/>
+                <state_interface name="velocity"/>
+                <state_interface name="effort"/>
+            </joint>
+            <!-- Femur -->
+            <joint name="${prefix}Joint${leg_num}_2">
+                <command_interface name="position"/>
+                <state_interface name="position"/>
+                <state_interface name="velocity"/>
+                <state_interface name="effort"/>
+            </joint>
+            <!-- Tibia -->
+            <joint name="${prefix}Joint${leg_num}_3">
+                <command_interface name="position"/>
+                <state_interface name="position"/>
+                <state_interface name="velocity"/>
+                <state_interface name="effort"/>
+            </joint>
+        </xacro:macro>
+
+        <!-- Invoking the macro for all 6 legs -->
+        <xacro:ros2_control_leg leg_num="1" prefix="${prefix}"/>
+        <xacro:ros2_control_leg leg_num="2" prefix="${prefix}"/>
+        <xacro:ros2_control_leg leg_num="3" prefix="${prefix}"/>
+        <xacro:ros2_control_leg leg_num="4" prefix="${prefix}"/>
+        <xacro:ros2_control_leg leg_num="5" prefix="${prefix}"/>
+        <xacro:ros2_control_leg leg_num="6" prefix="${prefix}"/>
+    </ros2_control>
+
+    <!-- GAZEBO IGNITION ROS 2 CONTROL PLUGIN       -->
+    <gazebo>
+        <plugin filename="ign_ros2_control-system" name="ign_ros2_control::IgnitionROS2ControlPlugin">
+            <parameters>${config_dir}/config/controller.yaml</parameters>
+        </plugin>
+    </gazebo>
+        
+    <!-- ================= FOOT CONTACT SENSORS ================= -->
+
+    <gazebo reference="${prefix}Tibia_1">
+        <sensor name="contact_sensor_1" type="contact">
+            <always_on>true</always_on>
+            <update_rate>50</update_rate>
+            <contact>
+                <collision>${prefix}Tibia_1_collision</collision>
+            </contact>
+        </sensor>
+    </gazebo>
+
+    <gazebo reference="${prefix}Tibia_2">
+        <sensor name="contact_sensor_2" type="contact">
+            <always_on>true</always_on>
+            <update_rate>50</update_rate>
+            <contact>
+                <collision>${prefix}Tibia_2_collision</collision>
+            </contact>
+        </sensor>
+    </gazebo>
+
+    <gazebo reference="${prefix}Tibia_3">
+        <sensor name="contact_sensor_3" type="contact">
+            <always_on>true</always_on>
+            <update_rate>50</update_rate>
+            <contact>
+                <collision>${prefix}Tibia_3_collision</collision>
+            </contact>
+        </sensor>
+    </gazebo>
+
+    <gazebo reference="${prefix}Tibia_4">
+        <sensor name="contact_sensor_4" type="contact">
+            <always_on>true</always_on>
+            <update_rate>50</update_rate>
+            <contact>
+                <collision>${prefix}Tibia_4_collision</collision>
+            </contact>
+        </sensor>
+    </gazebo>
+
+    <gazebo reference="${prefix}Tibia_5">
+        <sensor name="contact_sensor_5" type="contact">
+            <always_on>true</always_on>
+            <update_rate>50</update_rate>
+            <contact>
+                <collision>${prefix}Tibia_5_collision</collision>
+            </contact>
+        </sensor>
+    </gazebo>
+
+    <gazebo reference="${prefix}Tibia_6">
+        <sensor name="contact_sensor_6" type="contact">
+            <always_on>true</always_on>
+            <update_rate>50</update_rate>
+            <contact>
+                <collision>${prefix}Tibia_6_collision</collision>
+            </contact>
+        </sensor>
+    </gazebo>
+</robot>

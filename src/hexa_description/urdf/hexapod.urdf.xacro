@@ -109,7 +109,7 @@
     <gazebo reference="${prefix}Base">
         <sensor name="imu_sensor" type="imu">
             <always_on>1</always_on>
-            <update_rate>100</update_rate>
+            <update_rate>50</update_rate>
             <visualize>false</visualize>
             <topic>imu</topic>
         </sensor>
@@ -193,8 +193,9 @@
             <material name="tibia_color"/>
         </visual>
         <collision>
+            <origin xyz="-0.0716 -0.0404 0.1549" rpy="0 0 0"/>
             <geometry>
-                <mesh filename="package://${package_name}/meshes/Tibia_1.STL"/>
+                <sphere radius="0.012"/>
             </geometry>
         </collision>
     </link>
@@ -278,8 +279,9 @@
             <material name="tibia_color"/>
         </visual>
         <collision>
+            <origin xyz="-0.0716 -0.0404 0.1549" rpy="0 0 0"/>
             <geometry>
-                <mesh filename="package://${package_name}/meshes/Tibia_2.STL"/>
+                <sphere radius="0.012"/>
             </geometry>
         </collision>
     </link>
@@ -363,8 +365,9 @@
             <material name="tibia_color"/>
         </visual>
         <collision>
+            <origin xyz="-0.0716 -0.0404 0.1549" rpy="0 0 0"/>
             <geometry>
-                <mesh filename="package://${package_name}/meshes/Tibia_3.STL"/>
+                <sphere radius="0.012"/>
             </geometry>
         </collision>
     </link>
@@ -448,8 +451,9 @@
             <material name="tibia_color"/>
         </visual>
         <collision>
+            <origin xyz="-0.0716 -0.0404 0.1549" rpy="0 0 0"/>
             <geometry>
-                <mesh filename="package://${package_name}/meshes/Tibia_4.STL"/>
+                <sphere radius="0.012"/>
             </geometry>
         </collision>
     </link>
@@ -533,8 +537,9 @@
             <material name="tibia_color"/>
         </visual>
         <collision>
+            <origin xyz="-0.0716 -0.0404 0.1549" rpy="0 0 0"/>
             <geometry>
-                <mesh filename="package://${package_name}/meshes/Tibia_5.STL"/>
+                <sphere radius="0.012"/>
             </geometry>
         </collision>
     </link>
@@ -616,8 +621,9 @@
             <material name="tibia_color"/>
         </visual>
         <collision>
+            <origin xyz="-0.0716 -0.0404 0.1549" rpy="0 0 0"/>
             <geometry>
-                <mesh filename="package://${package_name}/meshes/Tibia_6.STL"/>
+                <sphere radius="0.012"/>
             </geometry>
         </collision>
     </link>
@@ -653,6 +659,10 @@
         <plugin
             filename="libignition-gazebo-imu-system.so"
             name="ignition::gazebo::systems::Imu">
+        </plugin>
+            <plugin
+            filename="libignition-gazebo-contact-system.so"
+            name="ignition::gazebo::systems::Contact">
         </plugin>
     </gazebo>
     <!-- ========================================== -->
@@ -709,9 +719,9 @@
     <gazebo reference="${prefix}Tibia_1">
         <sensor name="contact_sensor_1" type="contact">
             <always_on>true</always_on>
-            <update_rate>50</update_rate>
+            <update_rate>20</update_rate>
             <contact>
-                <collision>collision</collision>
+                <collision>${prefix}Tibia_1_collision</collision>
             </contact>
         </sensor>
     </gazebo>
@@ -719,9 +729,9 @@
     <gazebo reference="${prefix}Tibia_2">
         <sensor name="contact_sensor_2" type="contact">
             <always_on>true</always_on>
-            <update_rate>50</update_rate>
+            <update_rate>20</update_rate>
             <contact>
-                <collision>collision</collision>
+                <collision>${prefix}Tibia_2_collision</collision>
             </contact>
         </sensor>
     </gazebo>
@@ -729,9 +739,9 @@
     <gazebo reference="${prefix}Tibia_3">
         <sensor name="contact_sensor_3" type="contact">
             <always_on>true</always_on>
-            <update_rate>50</update_rate>
+            <update_rate>20</update_rate>
             <contact>
-                <collision>collision</collision>
+                <collision>${prefix}Tibia_3_collision</collision>
             </contact>
         </sensor>
     </gazebo>
@@ -739,9 +749,9 @@
     <gazebo reference="${prefix}Tibia_4">
         <sensor name="contact_sensor_4" type="contact">
             <always_on>true</always_on>
-            <update_rate>50</update_rate>
+            <update_rate>20</update_rate>
             <contact>
-                <collision>collision</collision>
+                <collision>${prefix}Tibia_4_collision</collision>
             </contact>
         </sensor>
     </gazebo>
@@ -749,9 +759,9 @@
     <gazebo reference="${prefix}Tibia_5">
         <sensor name="contact_sensor_5" type="contact">
             <always_on>true</always_on>
-            <update_rate>50</update_rate>
+            <update_rate>20</update_rate>
             <contact>
-                <collision>collision</collision>
+                <collision>${prefix}Tibia_5_collision</collision>
             </contact>
         </sensor>
     </gazebo>
@@ -759,9 +769,9 @@
     <gazebo reference="${prefix}Tibia_6">
         <sensor name="contact_sensor_6" type="contact">
             <always_on>true</always_on>
-            <update_rate>50</update_rate>
+            <update_rate>20</update_rate>
             <contact>
-                <collision>collision</collision>
+                <collision>${prefix}Tibia_6_collision</collision>
             </contact>
         </sensor>
     </gazebo>

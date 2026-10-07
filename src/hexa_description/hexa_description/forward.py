@@ -53,7 +53,7 @@ class TripodGait(Node):
         self.L3=0.15
 
 
-        self.body_vx=0.01  # m/s in body's forward direction
+        self.body_vx=0.9  # m/s in body's forward direction
         self.body_vy=0.0    # m/s in body's lateral direction
 
         # Stride length derived from body velocity and cycle time -how far the body (hence each foot's stance sweep) travels per full gait cycle.
@@ -146,7 +146,7 @@ class TripodGait(Node):
 
         for leg_id in ALL_LEGS:
             x, y, z = self.leg_local_target(leg_id, self.t)
-            if leg_id == 81:
+            if leg_id == 55:
                 L3 = self.L3 + 0.09
             else:
                 L3 = self.L3

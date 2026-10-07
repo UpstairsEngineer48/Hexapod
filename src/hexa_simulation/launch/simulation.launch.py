@@ -30,7 +30,7 @@ def generate_launch_description():
             )
         ),
         launch_arguments={
-            "gz_args": f"-r {world}",
+            "gz_args": f"-r -v 4 {world}",
         }.items(),
     )
 

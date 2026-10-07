@@ -29,4 +29,4 @@ def ik(base, target, L1=0.07, L2=0.08, L3=0.15):
     cos_term_3 = (X0**2 + Y0**2 + Z0**2 - L2**2 - L3**2) / (2 * L2 * L3)
     theta3 = -math.acos(clamp(cos_term_3))
 
-    return (math.degrees(theta1), math.degrees(theta2), math.degrees(theta3))
+    return (math.degrees(theta1), math.degrees(theta2-0.143), math.degrees(theta3+math.pi/2-0.5))

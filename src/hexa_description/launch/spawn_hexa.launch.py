@@ -28,6 +28,7 @@ def generate_launch_description():
     ign_res += f":{pkg_rover_share}/models"
     ign_plg = os.environ.get('IGN_GAZEBO_PLUGIN_PATH', '')
     ign_plg += f":{pkg_rover_prefix}/lib"
+    ign_plg += ":/usr/lib/x86_64-linux-gnu/ign-gazebo-6/plugins"
     # Expose these to the launched processes so Ignition can find models and plugins
     set_ign_resource = SetEnvironmentVariable(name='IGN_GAZEBO_RESOURCE_PATH', value=ign_res)
     set_ign_plugin = SetEnvironmentVariable(name='IGN_GAZEBO_PLUGIN_PATH', value=ign_plg)
