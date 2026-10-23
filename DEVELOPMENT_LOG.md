@@ -37,3 +37,33 @@ The `joint_state_broadcaster` and `hexapod_joint_trajectory_controller` were fai
 - **Simulation starting paused**: `simulation.launch.py` passed `gz_args` as just the world path, causing Gazebo to launch paused. Changed to `gz_args: f"-r {world}"` so the simulation runs immediately on launch.
 
 **Result**: Both controllers now load, configure, and activate successfully (`ros2 control list_controllers` shows both `active`).
+
+
+---
+
+---
+
+## 6. RL Integration and Yaw-Corrected Forward Gait
+
+### 6.1 Added Contact Sensors for RM
+Contact sensors were integrated into the simulation to provide contact information for the RM setup. Runtime insertion through the launch process did not produce functioning sensors. The cause was not established, so this was treated as an unresolved integration issue rather than a confirmed ROS defect.
+
+- **Runtime sensor loading failure**: Contact sensors configured or introduced during launch were not working as expected.
+
+- **Static world configuration**: Declaring the contact sensors directly in `world.sdf` allowed them to function correctly. This became the working configuration.
+
+- **RM-specific simulation assets**: Created separate RM versions of the world file, launch file, and models to isolate the sensor setup from the existing simulation configuration.
+
+**Result**: The RM setup uses contact sensors declared through `world.sdf` instead of relying on runtime sensor insertion.
+
+### 6.2 Applied Yaw-Based Correction to the Forward Gait
+Yaw-based feedback correction was added to reduce heading drift and make the forward gait travel more nearly in a straight line.
+
+- **Heading feedback**: The robot's yaw is used as feedback to identify deviation from the intended heading.
+
+- **Motion correction**: The controller adjusts the commanded motion based on yaw error, rather than relying solely on an unchanged open-loop forward command.
+
+- **Control approach**: This makes the forward gait approximately closed-loop with respect to heading. It should not be interpreted as fully closed-loop control of the robot's complete position or gait.
+
+**Result**: Yaw-based correction improves directional consistency during forward movement.
+
