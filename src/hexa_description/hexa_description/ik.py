@@ -1,4 +1,30 @@
 import math
+import os
+import sys
+
+#Angle offsets for the return at the bottom of ik():
+#  offsets ON  -> calibrated angles, the bot stands at the proper height (slower). Used for ripple.
+#  offsets OFF -> raw angles, the bot hugs the ground (faster). Used for tripod and the other gaits.
+#  None (default) -> automatic: ON only when the script calling ik() has one of the OFFSET_SCRIPTS words in its file name.
+#A node that switches gait at run time sets it explicitly with set_offsets(True/False).
+
+#Standalone scripts that use the offsets (matched against the file name, case-insensitive). Edit this to change it:
+#  ("ripple",)            -> ripple.py, ripple_closed.py
+#  ("ripple","forward")   -> also forward.py, forward_closed.py
+#  ("ripple","forward_closed") -> also only forward_closed.py
+OFFSET_SCRIPTS=("ripple",)
+
+#print one line the first time each script calls ik(), so you can see which mode it got
+VERBOSE=True
+
+_offsets=None
+_reported=set()
+
+def set_offsets(on):
+    global _offsets
+    _offsets=on
+    if VERBOSE:
+        print(f"[ik] offsets {'auto' if on is None else 'ON' if on else 'OFF'} (set by the running node)")
 
 def ik(base, target, L1=0.07, L2=0.08, L3=0.15):
     """
@@ -29,5 +55,13 @@ def ik(base, target, L1=0.07, L2=0.08, L3=0.15):
     cos_term_3 = (X0**2 + Y0**2 + Z0**2 - L2**2 - L3**2) / (2 * L2 * L3)
     theta3 = -math.acos(clamp(cos_term_3))
 
-    #return (math.degrees(theta1), math.degrees(theta2-0.143), math.degrees(theta3+math.pi/2-0.5))
-    return (math.degrees(theta1), math.degrees(theta2), math.degrees(theta3))
+    use_offsets=_offsets
+    if use_offsets is None:
+        name=os.path.basename(sys._getframe(1).f_code.co_filename).lower()
+        use_offsets=any(k.lower() in name for k in OFFSET_SCRIPTS)
+        if VERBOSE and name not in _reported:
+            _reported.add(name)
+            print(f"[ik] {name}: offsets {'ON' if use_offsets else 'OFF'} (auto)")
+    if use_offsets:
+        return (math.degrees(theta1),math.degrees(theta2-0.143),math.degrees(theta3+math.pi/2-0.5))
+    return (math.degrees(theta1),math.degrees(theta2),math.degrees(theta3))

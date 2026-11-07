@@ -37,6 +37,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from ik import ik
+import ik as ik_mod
 
 JOINT_NAMES=['hexa_Joint1_1', 'hexa_Joint1_2', 'hexa_Joint1_3',
              'hexa_Joint2_1', 'hexa_Joint2_2', 'hexa_Joint2_3',
@@ -54,16 +55,17 @@ MOUNT_XY={1: (0.067149, 0.11215), 2: (0.08925, 0.0), 3: (0.067149, -0.11215),
 #neutral_reach=foot distance from the hip at mid-stance (must leave room to sweep, L2+L3=0.23)
 #l3_extra=per-leg extra shank length used in ik() (empirical fix, copied from the *_closed.py gaits)
 #yaw_gain=scales the yaw-hold gains (1.0 = kp 1.5, kd 0.15, ki 0.3, i_max 0.2, max_corr 0.5 rad/s).
+#ik_offsets=True uses the offset angles in ik.py (bot stands at the proper height, slower), False uses the raw angles (bot hugs the ground, faster)
 #stride_cap=max stride in m. None=use the geometric reach limit (ok for ripple). The tripod uses neutral_reach 0.18,
 #which is already beyond the geometric limit (~0.16), so the geometric limit would collapse its strides to 0/negative.
 #0.10 is the stride the working open-loop forward.py used.
 GAITS={
     "tripod": {"cycle_time": 1.0, "swing_frac": 0.5, "step_height": 0.08, "ease": False,
                "phase": {1: 0.0, 3: 0.0, 5: 0.0, 2: 0.5, 4: 0.5, 6: 0.5},
-               "neutral_reach": 0.18, "l3_extra": {5: 0.09}, "yaw_gain": 1.0, "stride_cap": 0.10},
+               "neutral_reach": 0.18, "l3_extra": {5: 0.09}, "yaw_gain": 1.0, "stride_cap": 0.10, "ik_offsets": False},
     "ripple": {"cycle_time": 1.2, "swing_frac": 1/3, "step_height": 0.06, "ease": True,
                "phase": {1: 0.0, 3: 1/6, 5: 2/6, 2: 3/6, 6: 4/6, 4: 5/6},
-               "neutral_reach": 0.10, "l3_extra": {2: 0.04, 5: 0.04}, "yaw_gain": 1.0, "stride_cap": None},
+               "neutral_reach": 0.10, "l3_extra": {2: 0.04, 5: 0.04}, "yaw_gain": 1.0, "stride_cap": None, "ik_offsets": True},
 }
 
 def clamp(v, lo, hi):
@@ -190,6 +192,7 @@ class CmdVelGait(Node):
         self.neutral_reach=g["neutral_reach"]
         self.l3_extra=g["l3_extra"]
         self.stride_cap=g["stride_cap"]
+        ik_mod.set_offsets(g["ik_offsets"])
         yg=g["yaw_gain"]
         self.stance_time=self.cycle_time*(1-self.swing_frac)
         #Values that can be tuned for yaw hold (scaled by the gait's yaw_gain)
