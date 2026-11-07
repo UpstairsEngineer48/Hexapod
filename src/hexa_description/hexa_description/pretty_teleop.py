@@ -6,6 +6,7 @@ Pretty arrow-key teleop for cmd_vel_fixed_heading.py  (pip install rich)
   Shift+Up / Shift+Down  speed +10% / -10%
   Left / Right         turn left / right (constant turn rate)
   A / D                strafe left / right (hexapod is omnidirectional)
+  1 / 2                switch gait: tripod / ripple (works while walking)
   Space                stop
   Q                    quit
 
@@ -23,7 +24,9 @@ import tty
 
 import rclpy
 from rclpy.node import Node
+from rclpy.qos import QoSProfile,DurabilityPolicy,ReliabilityPolicy
 from geometry_msgs.msg import Twist
+from std_msgs.msg import String
 from rich import box
 from rich.console import Group
 from rich.live import Live
@@ -66,6 +69,16 @@ class PrettyTeleop(Node):
         self.pub = self.create_publisher(Twist, "/cmd_vel", 10)
         self.speed = START_SPEED
         self.held = None          # [action, count, last_time]
+        self.gait_pub=self.create_publisher(String,"/gait_cmd",10)
+        state_qos=QoSProfile(depth=1,durability=DurabilityPolicy.TRANSIENT_LOCAL,reliability=ReliabilityPolicy.RELIABLE)
+        self.create_subscription(String,"/gait_state",self.gait_state_cb,state_qos)
+        self.gait=None            # gait the robot reports it is using
+        self.requested=None       # gait we asked for, until the robot confirms
+
+    def gait_state_cb(self,msg):
+        self.gait=msg.data
+        if self.requested==self.gait:
+            self.requested=None
 
     # ---- input ------------------------------------------------------------
     def handle_key(self, name, shift, now):
@@ -80,6 +93,11 @@ class PrettyTeleop(Node):
             return True
         if name == "q":
             return False
+        if name in ("1","2"):
+            gait={"1":"tripod","2":"ripple"}[name]
+            self.gait_pub.publish(String(data=gait))
+            self.requested=None if gait==self.gait else gait
+            return True
         action = {"up": "fwd", "down": "back", "left": "left", "right": "right",
                   "a": "slide_l", "d": "slide_r"}.get(name)
         if action:
@@ -149,6 +167,10 @@ class PrettyTeleop(Node):
 
         speed_row = Text.assemble(("speed  ", "bold"), bar,
                                   (f"  {self.speed:.3f} m/s", "bold white"))
+        if self.requested:
+            gait_row=Text.assemble(("gait   ","bold"),(f"{self.gait or '?'} → {self.requested} ...","bold yellow"))
+        else:
+            gait_row=Text.assemble(("gait   ","bold"),(self.gait or "waiting for gait node","bold cyan"))
         cmd = Text(f"cmd_vel   x={vx:+.3f}   y={vy:+.3f}   ωz={wz:+.2f}", style="dim")
 
         legend = Table(box=box.SIMPLE_HEAD, show_edge=False, pad_edge=False)
@@ -158,9 +180,10 @@ class PrettyTeleop(Node):
         legend.add_row("⇧↑ / ⇧↓", "speed +10% / −10%")
         legend.add_row("← / →", "turn left / right")
         legend.add_row("A / D", "strafe left / right")
+        legend.add_row("1 / 2", "tripod / ripple gait")
         legend.add_row("Space / Q", "stop / quit")
 
-        body = Group(Text(""), pad, Text(""), status, Text(""), speed_row, cmd,
+        body = Group(Text(""), pad, Text(""), status, Text(""), speed_row, gait_row, cmd,
                      Text(""), legend)
         return Panel(body, title="[bold]🕷  HEXAPOD TELEOP[/]",
                      subtitle="[dim]/cmd_vel[/]", border_style="bright_blue",
@@ -186,6 +209,7 @@ class PrettyTeleop(Node):
                     action = self.active_action(time.monotonic())
                     vx, vy, wz = self.twist_for(action)
                     self.publish(vx, vy, wz)
+                    rclpy.spin_once(self,timeout_sec=0.0)
                     live.update(self.render(action, vx, vy, wz))
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old)

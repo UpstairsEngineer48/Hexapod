@@ -15,14 +15,21 @@ Frames:
           start-up (x = the way it faced when the node got its first IMU msg).
 Yaw hold keeps the heading while angular.z == 0.
 
+Switching gait while running: publish the gait name on /gait_cmd (std_msgs/String,
+"tripod" or "ripple"), e.g. press 1 / 2 in pretty_teleop.py, or
+  ros2 topic pub --once /gait_cmd std_msgs/msg/String "{data: ripple}"
+The robot slows to a stop, blends its stance into the new gait, then carries on
+with whatever /cmd_vel is being sent. The current gait is published on /gait_state.
+
 Needs: pip install rich
 """
 import math
 import sys
 import rclpy
 from rclpy.node import Node
-from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import qos_profile_sensor_data,QoSProfile,DurabilityPolicy,ReliabilityPolicy
 from geometry_msgs.msg import Twist
+from std_msgs.msg import String
 from sensor_msgs.msg import Imu
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from rich import box
@@ -113,22 +120,15 @@ class CmdVelGait(Node):
         frame=ask_choice("Which command frame?", frame_opts, "world")
         self.world_frame=(frame=="world")
 
-        g=GAITS[gait]
-        self.cycle_time=g["cycle_time"]
-        self.swing_frac=g["swing_frac"]
-        self.step_height=g["step_height"]
-        self.ease=g["ease"]
-        self.phase=g["phase"]
-        self.neutral_reach=g["neutral_reach"]
-        self.l3_extra=g["l3_extra"]
-        self.stride_cap=g["stride_cap"]
-        yg=g["yaw_gain"]
-        self.stance_time=self.cycle_time*(1-self.swing_frac)
+        self.apply_gait(gait)
         self.get_logger().info(f"Gait={gait}, frame={frame}")
 
         self.imu_topic="/imu"
         self.create_subscription(Twist, "/cmd_vel", self.cmd_cb, 10)
         self.create_subscription(Imu, self.imu_topic, self.imu_cb, qos_profile_sensor_data)
+        self.create_subscription(String,"/gait_cmd",self.gait_cb,10)
+        state_qos=QoSProfile(depth=1,durability=DurabilityPolicy.TRANSIENT_LOCAL,reliability=ReliabilityPolicy.RELIABLE)
+        self.state_pub=self.create_publisher(String,"/gait_state",state_qos)
 
         self.dt=0.01
         self.L2=0.08
@@ -146,12 +146,7 @@ class CmdVelGait(Node):
         self.timeout=0.5
         self.debug=True
 
-        #Values that can be tuned for yaw hold (scaled by the gait's yaw_gain)
-        self.kp=1.5*yg
-        self.kd=0.15*yg
-        self.ki=0.3*yg
-        self.i_max=0.2*yg
-        self.max_corr=0.5*yg
+        #Yaw hold gains (kp, kd, ki, i_max, max_corr) are set per gait in apply_gait()
         self.dband=0.01
 
         R=self.reach_margin*(self.L2+self.L3)
@@ -171,8 +166,82 @@ class CmdVelGait(Node):
         self.strides={l: (0.0, 0.0) for l in ALL_LEGS}
         self.lift_scale=0.0
 
+        #gait switching: idle -> stopping -> blending -> idle
+        self.switch_state="idle"
+        self.pending_gait=None
+        self.blend_time=1.0
+        self.blend_alpha=1.0
+        self.blend_from=None
+        self.last_positions=None
+
         self.t=0.0
         self.create_timer(self.dt, self.update)
+        self.state_pub.publish(String(data=self.gait_name))
+
+    def apply_gait(self, name):
+        #load one gait's parameters (used at start-up and on every switch)
+        g=GAITS[name]
+        self.gait_name=name
+        self.cycle_time=g["cycle_time"]
+        self.swing_frac=g["swing_frac"]
+        self.step_height=g["step_height"]
+        self.ease=g["ease"]
+        self.phase=g["phase"]
+        self.neutral_reach=g["neutral_reach"]
+        self.l3_extra=g["l3_extra"]
+        self.stride_cap=g["stride_cap"]
+        yg=g["yaw_gain"]
+        self.stance_time=self.cycle_time*(1-self.swing_frac)
+        #Values that can be tuned for yaw hold (scaled by the gait's yaw_gain)
+        self.kp=1.5*yg
+        self.kd=0.15*yg
+        self.ki=0.3*yg
+        self.i_max=0.2*yg
+        self.max_corr=0.5*yg
+
+    def gait_cb(self, msg):
+        name=msg.data.strip().lower()
+        if name not in GAITS:
+            self.get_logger().warn(f"Unknown gait '{msg.data}', choose from {list(GAITS)}")
+            return
+        if self.switch_state=="idle":
+            if name==self.gait_name:
+                return
+            self.switch_state="stopping"
+            self.get_logger().info(f"Switching {self.gait_name} -> {name}: slowing to a stop first")
+        #latest request wins, also while a switch is already in progress
+        self.pending_gait=name
+
+    def begin_blend(self):
+        #robot is standing still: swap the gait parameters and blend the stance
+        new=self.pending_gait
+        self.pending_gait=None
+        if new is None or new==self.gait_name:
+            self.switch_state="idle"
+            return
+        self.apply_gait(new)
+        self.t=0.0
+        self.yi=0.0
+        if self.yaw is not None:
+            self.yaw_target=self.yaw
+        self.state_pub.publish(String(data=new))
+        self.get_logger().info(f"Gait={new}, blending stance")
+        if self.last_positions is None:
+            self.switch_state="idle"
+            return
+        self.blend_from=self.last_positions
+        self.blend_alpha=0.0
+        self.switch_state="blending"
+
+    def finish_blend(self):
+        self.blend_from=None
+        if self.pending_gait is not None and self.pending_gait!=self.gait_name:
+            #another change was requested during the blend
+            self.switch_state="stopping"
+        else:
+            self.pending_gait=None
+            self.switch_state="idle"
+            self.get_logger().info(f"Gait {self.gait_name} ready")
 
     def cmd_cb(self, msg):
         self.cmd_vx=msg.linear.x
@@ -275,6 +344,10 @@ class CmdVelGait(Node):
         tvy=cvy/k
         twz=clamp(self.cmd_wz, -self.max_wz, self.max_wz)
 
+        #while the gait is changing, ask for zero velocity so the robot stops first
+        if self.switch_state!="idle":
+            tvx=tvy=twz=0.0
+
         #smooth the command (feet are position-driven, so a velocity step = a foot jump)
         la=self.lin_acc*self.dt
         aa=self.ang_acc*self.dt
@@ -282,8 +355,16 @@ class CmdVelGait(Node):
         self.vy=slew(self.vy, tvy, la)
         self.wz=slew(self.wz, twz, aa)
 
+        #stopped: swap to the new gait and start blending the stance
+        if self.switch_state=="stopping" and max(abs(self.vx),abs(self.vy),abs(self.wz))<1e-3:
+            self.vx=self.vy=self.wz=0.0
+            self.begin_blend()
+
         #yaw hold only when no turn is requested, re-latch the target when a turn ends
-        if abs(self.cmd_wz)>1e-3:
+        #(off while the gait is changing)
+        if self.switch_state!="idle":
+            self.wz_hold=0.0
+        elif abs(self.cmd_wz)>1e-3:
             self.yaw_target=self.yaw
             self.wz_hold=0.0
             self.yi=0.0
@@ -310,6 +391,16 @@ class CmdVelGait(Node):
             positions[idx]=math.radians(t1)
             positions[idx+1]=math.radians(t2)
             positions[idx+2]=math.radians(t3)
+
+        #blend from the old gait's stance to the new one (joint space, smoothstep)
+        if self.switch_state=="blending":
+            self.blend_alpha=min(1.0, self.blend_alpha+self.dt/self.blend_time)
+            a=self.blend_alpha
+            a=a*a*(3-2*a)
+            positions=[f+(n-f)*a for f,n in zip(self.blend_from,positions)]
+            if self.blend_alpha>=1.0:
+                self.finish_blend()
+        self.last_positions=positions
 
         msg=JointTrajectory()
         msg.joint_names=JOINT_NAMES
