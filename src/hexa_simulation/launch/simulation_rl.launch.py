@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
-#
-# ORBIT / TEST COPY -- based on simulation.launch.py
-# Difference: loads world2.sdf (robot included statically) and
-# hexa_to_launch.py (no runtime spawn node) instead of the originals.
-#
-# Safe to delete once testing is done -- original simulation.launch.py
-# and spawn_hexa.launch.py are untouched.
+
 
 import os
 
@@ -28,6 +22,9 @@ def generate_launch_description():
     # Place world2.sdf in the same worlds/ directory as world.sdf,
     # e.g. hexa_simulation/share/hexa_simulation/worlds/world2.sdf
     world = os.path.join(sim_pkg, "worlds", "world2.sdf")
+
+    # Pose bridge config: pose_bridge.yaml lives in the workspace root (~/hexapod_ws)
+    pose_bridge_cfg=os.path.expanduser("~/hexapod_ws/pose_bridge.yaml")
 
     # FIX: world2.sdf's <include><uri>model://hexapod_test_model</uri></include>
     # is resolved by Gazebo at world-load time, so IGN_GAZEBO_RESOURCE_PATH
@@ -54,12 +51,8 @@ def generate_launch_description():
         launch_arguments={
             # ORIGINAL (with GUI/rendering window) -- use for visual debugging.
             "gz_args": f"-r {world}",
-
-            # RL-FAST (headless, server-only, no GUI window) -- uncomment this
-            # line and comment out the one above when running PPO training.
+            # RL-FAST (headless, server-only, no GUI window) 
             # "-s" = server only, no ogre2 render window, much lower CPU/GPU load.
-            # This is the single biggest RTF win available before touching
-            # sensors/xacro at all.
            #"gz_args": f"-s -r {world}",
         }.items(),
     )
@@ -90,7 +83,15 @@ def generate_launch_description():
                 ],
                 output="screen",
                 parameters=[{"use_sim_time": True}],
-            )
+            ),
+            # Same as: ros2 run ros_gz_bridge parameter_bridge --ros-args -p config_file:=pose_bridge.yaml
+            Node(
+                package="ros_gz_bridge",
+                executable="parameter_bridge",
+                name="pose_bridge",
+                parameters=[{"config_file":pose_bridge_cfg}],
+                output="screen",
+            ),
         ]
     )
 

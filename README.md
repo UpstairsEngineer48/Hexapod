@@ -83,9 +83,9 @@ Notes:
 
 ## 3. Reinforcement Learning Environment
 
-The RL setup runs in its own Gazebo partition so it does not clash with other simulations on the same network. It loads `world2.sdf` (robot included statically) and bridges `/odom` to ROS 2.
+The RL setup runs in its own Gazebo partition so it does not clash with other simulations on the same network. It loads `world2.sdf` (robot included statically) and starts the `/odom` and pose bridges automatically.
 
-**Terminal 1 — Set the environment variables and launch the RL simulation:**
+**Set the environment variables and launch the RL simulation:**
 
 ```bash
 export ROS_DOMAIN_ID=0
@@ -93,11 +93,7 @@ export IGN_PARTITION=hexa_sim_0
 ros2 launch hexa_simulation simulation_rl.launch.py
 ```
 
-**Terminal 2 — Start the pose bridge between Gazebo and ROS 2:**
-
-```bash
-ros2 run ros_gz_bridge parameter_bridge --ros-args -p config_file:=pose_bridge.yaml
-```
+The pose bridge between Gazebo and ROS 2 starts automatically with the launch file, so no second terminal is needed.
 
 ### GUI mode vs headless mode
 
@@ -118,4 +114,4 @@ For training, comment out the first line and uncomment the second. Rebuild after
 Notes:
 
 - `ROS_DOMAIN_ID` and `IGN_PARTITION` isolate this simulation. To run several environments in parallel, give each one a different value (for example `ROS_DOMAIN_ID=1` and `IGN_PARTITION=hexa_sim_1`).
-- Run the bridge command from the folder that contains `pose_bridge.yaml`, or pass the full path to the file.
+- The pose bridge reads `pose_bridge.yaml` from the workspace root (`~/hexapod_ws/pose_bridge.yaml`), so keep the file there.
