@@ -14,6 +14,8 @@ Frames:
   world : x/y are fixed room directions, defined by the robot's heading at
           start-up (x = the way it faced when the node got its first IMU msg).
 Yaw hold keeps the heading while angular.z == 0.
+
+Needs: pip install rich
 """
 import math
 import sys
@@ -23,6 +25,10 @@ from rclpy.qos import qos_profile_sensor_data
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Imu
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+from rich import box
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
 from ik import ik
 
 JOINT_NAMES=['hexa_Joint1_1', 'hexa_Joint1_2', 'hexa_Joint1_3',
@@ -38,9 +44,19 @@ MOUNT_XY={1: (0.067149, 0.11215), 2: (0.08925, 0.0), 3: (0.067149, -0.11215),
 
 #swing_frac=fraction of the cycle a leg is in the air, phase=when each leg starts its swing (0..1)
 #ease=cosine-eased swing (zero foot speed at lift-off/touch-down)
+#neutral_reach=foot distance from the hip at mid-stance (must leave room to sweep, L2+L3=0.23)
+#l3_extra=per-leg extra shank length used in ik() (empirical fix, copied from the *_closed.py gaits)
+#yaw_gain=scales the yaw-hold gains (1.0 = kp 1.5, kd 0.15, ki 0.3, i_max 0.2, max_corr 0.5 rad/s).
+#stride_cap=max stride in m. None=use the geometric reach limit (ok for ripple). The tripod uses neutral_reach 0.18,
+#which is already beyond the geometric limit (~0.16), so the geometric limit would collapse its strides to 0/negative.
+#0.10 is the stride the working open-loop forward.py used.
 GAITS={
-    "tripod": {"cycle_time": 1.0, "swing_frac": 0.5, "step_height": 0.08, "ease": False, "phase": {1: 0.0, 3: 0.0, 5: 0.0, 2: 0.5, 4: 0.5, 6: 0.5}},
-    "ripple": {"cycle_time": 1.2, "swing_frac": 1/3, "step_height": 0.06, "ease": True, "phase": {1: 0.0, 3: 1/6, 5: 2/6, 2: 3/6, 6: 4/6, 4: 5/6}},
+    "tripod": {"cycle_time": 1.0, "swing_frac": 0.5, "step_height": 0.08, "ease": False,
+               "phase": {1: 0.0, 3: 0.0, 5: 0.0, 2: 0.5, 4: 0.5, 6: 0.5},
+               "neutral_reach": 0.18, "l3_extra": {5: 0.09}, "yaw_gain": 1.0, "stride_cap": 0.10},
+    "ripple": {"cycle_time": 1.2, "swing_frac": 1/3, "step_height": 0.06, "ease": True,
+               "phase": {1: 0.0, 3: 1/6, 5: 2/6, 2: 3/6, 6: 4/6, 4: 5/6},
+               "neutral_reach": 0.10, "l3_extra": {2: 0.04, 5: 0.04}, "yaw_gain": 1.0, "stride_cap": None},
 }
 
 def clamp(v, lo, hi):
@@ -55,26 +71,31 @@ def quat_to_yaw(q):
 def slew(cur, target, max_step):
     return cur+clamp(target-cur, -max_step, max_step)
 
-def ask_choice(question, options, default):
-    #terminal menu, falls back to default if there is no terminal (e.g. launch file)
+def ask_choice(title, options, default):
+    #pretty terminal menu, falls back to default if there is no terminal (e.g. launch file)
     if not sys.stdin.isatty():
         return default
+    console=Console()
     keys=[k for k,_ in options]
-    print(f"\n{question}")
+    table=Table(box=box.SIMPLE_HEAD, header_style="bold cyan")
+    table.add_column("#", justify="center")
+    table.add_column("Option", style="bold")
+    table.add_column("Description")
     for i,(k,desc) in enumerate(options):
-        print(f"  {i}) {k:<7} - {desc}")
+        table.add_row(str(i), k+("  ★" if k==default else ""), desc)
+    console.print(Panel(table, title=f"[bold]{title}[/]", border_style="bright_blue", expand=False))
     while True:
         try:
-            ans=input(f"Choose 0-{len(options)-1} (Enter = {default}): ").strip().lower()
+            ans=console.input(f"[cyan]Choose 0-{len(keys)-1}[/] [dim](Enter = {default})[/]: ").strip().lower()
         except EOFError:
             return default
         if ans=="":
             return default
-        if ans.isdigit() and int(ans)<len(options):
+        if ans.isdigit() and int(ans)<len(keys):
             return keys[int(ans)]
         if ans in keys:
             return ans
-        print("  Not a valid choice.")
+        console.print("[red]Not a valid choice.[/]")
 
 class CmdVelGait(Node):
     def __init__(self):
@@ -98,6 +119,10 @@ class CmdVelGait(Node):
         self.step_height=g["step_height"]
         self.ease=g["ease"]
         self.phase=g["phase"]
+        self.neutral_reach=g["neutral_reach"]
+        self.l3_extra=g["l3_extra"]
+        self.stride_cap=g["stride_cap"]
+        yg=g["yaw_gain"]
         self.stance_time=self.cycle_time*(1-self.swing_frac)
         self.get_logger().info(f"Gait={gait}, frame={frame}")
 
@@ -110,8 +135,7 @@ class CmdVelGait(Node):
         self.L3=0.15
 
         #Values that can be tuned for gait movement
-        #neutral_reach must leave room to sweep (L2+L3=0.23)
-        self.neutral_reach=0.10
+        #(neutral_reach, l3_extra and yaw_gain are per gait, see GAITS above)
         self.neutral_z=-0.155
         self.reach_margin=0.97
         self.max_vx=0.15
@@ -122,12 +146,12 @@ class CmdVelGait(Node):
         self.timeout=0.5
         self.debug=True
 
-        #Values that can be tuned for yaw hold
-        self.kp=1.5
-        self.kd=0.15
-        self.ki=0.3
-        self.i_max=0.2
-        self.max_corr=0.5
+        #Values that can be tuned for yaw hold (scaled by the gait's yaw_gain)
+        self.kp=1.5*yg
+        self.kd=0.15*yg
+        self.ki=0.3*yg
+        self.i_max=0.2*yg
+        self.max_corr=0.5*yg
         self.dband=0.01
 
         R=self.reach_margin*(self.L2+self.L3)
@@ -186,7 +210,7 @@ class CmdVelGait(Node):
         d=cu*cu-c*c+self.Rh*self.Rh
         if d<=0:
             return 0.0
-        return 2*(math.sqrt(d)-cu)
+        return max(0.0, 2*(math.sqrt(d)-cu))
 
     def update_strides(self, vx, vy, wz):
         #stride=(body velocity+wz x r_foot)*stance_time, uniformly scaled down if any leg would be pushed out of reach
@@ -202,7 +226,8 @@ class CmdVelGait(Node):
             raw[l]=(sx,sy)
             L=math.hypot(sx, sy)
             if L>1e-9:
-                k=min(k, self.reach_limit(l, sx, sy)/L)
+                lim=self.stride_cap if self.stride_cap is not None else self.reach_limit(l, sx, sy)
+                k=min(k, lim/L)
         self.strides={l: (sx*k, sy*k) for l,(sx,sy) in raw.items()}
         biggest=max(math.hypot(*s) for s in self.strides.values())
         #fade the foot lift in/out so a stopped robot stands still instead of marching
@@ -272,7 +297,8 @@ class CmdVelGait(Node):
             self.get_logger().warn(warn, throttle_duration_sec=2.0)
         elif self.debug and (abs(self.vx)+abs(self.vy))>1e-3:
             err=math.degrees(wrap_pi(self.yaw_target-self.yaw))
-            info=f"yaw={math.degrees(self.yaw):.1f} target={math.degrees(self.yaw_target):.1f} err={err:.1f} deg  wz_hold={self.wz_hold:.3f} rad/s"
+            sat=" SATURATED" if abs(self.wz_hold)>=self.max_corr-1e-3 else ""
+            info=f"yaw={math.degrees(self.yaw):.1f} target={math.degrees(self.yaw_target):.1f} err={err:.1f} deg  wz_hold={self.wz_hold:.3f}/{self.max_corr:.2f} rad/s{sat}"
             self.get_logger().info(info, throttle_duration_sec=1.0)
 
         positions=[0.0]*len(JOINT_NAMES)
