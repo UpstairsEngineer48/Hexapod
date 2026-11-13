@@ -2,6 +2,11 @@
 
 A six-legged robot simulated in Gazebo with ROS 2 Humble. The project includes the main simulation, standalone gait nodes (open-loop and IMU-assisted closed-loop), and a reinforcement learning (RL) setup.
 
+## Hexapod Simulation Demo
+
+[![Hexapod Robot Simulation](https://img.youtube.com/vi/K-DYaAvGT-s/maxresdefault.jpg)](https://youtu.be/K-DYaAvGT-s)
+
+[Watch the full video on YouTube](https://youtu.be/K-DYaAvGT-s)
 ## Project Structure
 
 ```text
